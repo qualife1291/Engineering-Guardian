@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from .scanner import fingerprint
+from .scanner import MAX_FILE_BYTES, fingerprint, read_bounded_regular_file
 from .store import UCGStore
 
 class StaleSnapshotError(RuntimeError):
@@ -30,9 +30,11 @@ def build_context_pack(db_path: str, snapshot_id: str, query: str, max_chars: in
             if not stored:
                 raise StaleSnapshotError("Indexed file missing; run scan again")
             try:
-                data=path.read_bytes()
-            except OSError as exc:
-                raise StaleSnapshotError("Source unavailable; run scan again") from exc
+                data, _ = read_bounded_regular_file(path, MAX_FILE_BYTES)
+                if data is None:
+                    raise StaleSnapshotError("Source exceeds the indexed size limit; run scan again")
+            except (OSError, ValueError) as exc:
+                raise StaleSnapshotError("Source unavailable or no longer a regular file; run scan again") from exc
             if fingerprint(data)!=stored[0]:
                 raise StaleSnapshotError("Source has changed since snapshot; run scan again")
             lines=data.decode("utf-8",errors="replace").splitlines()
@@ -49,6 +51,6 @@ def build_context_pack(db_path: str, snapshot_id: str, query: str, max_chars: in
                 "source_snippet_characters":sum(len(x["snippet"]) for x in items),
                 "context_characters":len(serialized),"estimated_tokens_char_div_4":(len(serialized)+3)//4,
                 "max_chars":max_chars,"truncated":len(items)<len(hits),
-                "resolution_notice":"CALLS edges are heuristic candidates, not compiler-verified"}
+                "resolution_notice":"Tree-sitter edges are conservative syntax bindings; fallback ast_candidate edges are heuristic. Neither is compiler/type-checker or runtime proof."}
     finally:
         store.close()

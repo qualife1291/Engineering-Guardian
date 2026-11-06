@@ -64,7 +64,7 @@ def outline(store: UCGStore, snapshot: str, path: str, limit: int = 120) -> dict
                          "line": r[3], "end_line": r[4],
                          "span": max(1,r[4]-r[3]+1), "signature": r[5][:240]}
                         for r in rows[:limit]], "truncated": len(rows)>limit,
-            "notice": "Non-Python symbol boundaries use heuristic parsing."}
+            "notice": "Tree-sitter syntax boundaries are used when installed; otherwise the language fallback is heuristic. Neither is compiler proof."}
 
 
 def hotspots(store: UCGStore, snapshot: str, min_lines: int = 300,

@@ -95,24 +95,35 @@ class GuardianService:
         start=time.perf_counter(); store=UCGStore(self.db)
         try:
             snapshot=self._guard_latest(store)
-            symbol=store.conn.execute("SELECT 1 FROM symbols WHERE snapshot_id=? AND symbol_id=?",(snapshot,symbol_id)).fetchone()
+            symbol=store.conn.execute(
+                "SELECT 1 FROM symbols WHERE snapshot_id=? AND symbol_id=?",
+                (snapshot,symbol_id)).fetchone()
             if not symbol:
                 raise KeyError("Unknown symbol_id in current snapshot")
-            edges=store.traverse(snapshot,symbol_id,direction,max(1,min(max_depth,4)),max_nodes=200)
-            ids={edge["to"] for edge in edges}
+            edges=store.traverse(snapshot,symbol_id,direction,
+                                 max(1,min(max_depth,4)),max_nodes=200,max_edges=200)
+            ids=sorted({edge["to"] for edge in edges})
             node_map={}
-            for sid in ids:
-                row=store.conn.execute("SELECT qualified_name,file_path,start_line FROM symbols WHERE snapshot_id=? AND symbol_id=?",(snapshot,sid)).fetchone()
-                if row:node_map[sid]={"qualified_name":row[0],"file_path":row[1],"start_line":row[2]}
+            for offset in range(0,len(ids),400):
+                chunk=ids[offset:offset+400]
+                marks=",".join("?" for _ in chunk)
+                rows=store.conn.execute(
+                    "SELECT symbol_id,qualified_name,file_path,start_line FROM symbols "
+                    f"WHERE snapshot_id=? AND symbol_id IN ({marks})",
+                    (snapshot,*chunk)).fetchall()
+                node_map.update({row[0]:{"qualified_name":row[1],"file_path":row[2],
+                                         "start_line":row[3]} for row in rows})
             for edge in edges:
                 edge["symbol"]=node_map.get(edge["to"])
-        finally:store.close()
+            coverage=store.parser_coverage(snapshot)
+        finally:
+            store.close()
         tool="guardian_get_callees" if direction=="forward" else "guardian_get_callers"
         self.metrics.log("tool_call",tool_name=tool,success=True,
                          duration_ms=round(1000*(time.perf_counter()-start),3))
-        return {"snapshot_id":snapshot,"direction":direction,"edges":edges[:200],
+        return {"snapshot_id":snapshot,"direction":direction,"edges":edges,
                 "relationships":"Tree-sitter syntactic bindings where available; fallback AST candidates are heuristic.",
-                    "parser_coverage":store.parser_coverage(snapshot)}
+                "parser_coverage":coverage}
 
     def context(self, query: str, max_chars: int = 12000) -> dict:
         started=time.perf_counter(); store=UCGStore(self.db)
