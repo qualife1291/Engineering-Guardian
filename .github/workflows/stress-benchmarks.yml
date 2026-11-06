@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   stress:
-    name: \${{ matrix.name }}
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -55,35 +55,35 @@ jobs:
           python -m ucg.cli --root . parsers install --languages python,typescript,javascript,dart,kotlin,java,sql,go,rust,protobuf
       - name: Generate deterministic project corpus
         env:
-          CORPUS: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}
+          CORPUS: ${{ runner.temp }}/guardian-stress/${{ matrix.name }}
         run: |
           python -m benchmarks.generate_stress_corpus \
             --output "$CORPUS" \
-            --files \${{ matrix.files }} \
-            --lines \${{ matrix.lines }} \
-            --topology \${{ matrix.topology }} \
-            --large-file-lines \${{ matrix.large_file_lines }} \
+            --files ${{ matrix.files }} \
+            --lines ${{ matrix.lines }} \
+            --topology ${{ matrix.topology }} \
+            --large-file-lines ${{ matrix.large_file_lines }} \
             --invalid-every 97 \
             --duplicate-every 211 \
             --dynamic-every 13 \
             --symlink-loop
       - name: Measure cold, warm, incremental, graph, storage and memory
         env:
-          CORPUS: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}
-          DB: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}.sqlite
+          CORPUS: ${{ runner.temp }}/guardian-stress/${{ matrix.name }}
+          DB: ${{ runner.temp }}/guardian-stress/${{ matrix.name }}.sqlite
         run: |
           mkdir -p stress-results
           python -m benchmarks.run_stress_benchmark \
             --source "$CORPUS" \
             --db "$DB" \
-            --output "stress-results/\${{ matrix.name }}.json" \
-            --runs \${{ matrix.runs }} \
+            --output "stress-results/${{ matrix.name }}.json" \
+            --runs ${{ matrix.runs }} \
             --max-rss-mb 4096 \
             --max-cold-seconds 300
       - name: Upload raw benchmark report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: guardian-stress-\${{ matrix.name }}
-          path: stress-results/\${{ matrix.name }}.json
+          name: guardian-stress-${{ matrix.name }}
+          path: stress-results/${{ matrix.name }}.json
           if-no-files-found: warn
