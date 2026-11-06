@@ -77,6 +77,19 @@ class WorkspaceScaleSafetyTests(unittest.TestCase):
             self.assertEqual(store.overview(results[0]["snapshot_id"])["files"],30)
             store.close()
 
+    def test_same_line_repeated_calls_do_not_break_snapshot_commit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)/"repeat"; root.mkdir()
+            (root/"provider.py").write_text("def helper(): return 1\n",encoding="utf-8")
+            (root/"consumer.py").write_text(
+                "from provider import helper\n"
+                "def caller(): return helper() + helper()\n",encoding="utf-8")
+            result=scan_workspace(str(root),str(Path(tmp)/"repeat.sqlite"))
+            self.assertEqual(result["overview"]["files"],2)
+            store=UCGStore(Path(tmp)/"repeat.sqlite")
+            self.assertGreaterEqual(store.overview(result["snapshot_id"])["edges"],1)
+            store.close()
+
     def test_graph_traversal_is_bounded_and_cycle_safe(self):
         with tempfile.TemporaryDirectory() as tmp:
             store=UCGStore(Path(tmp)/"index.sqlite")

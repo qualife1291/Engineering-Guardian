@@ -234,6 +234,15 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
         edges = list(unique_edges.values())
         graph_done = time.perf_counter()
 
+        # The compact legacy call_sites table is line-granular; multiple same-name
+        # calls on one line are distinct syntax references but one candidate row.
+        call_sites = list(dict.fromkeys(call_sites))
+        imports = list({(x.file_path,x.module_specifier,x.imported_name,x.local_name,
+                         x.import_kind,x.line):x for x in imports}.values())
+        references = list({(x.source_id,x.evidence_path,x.start_byte,x.end_byte):x
+                           for x in references}.values())
+        symbol_analysis = list({x.symbol_id:x for x in symbol_analysis}.values())
+
         after, _ = scan_files(root_path)
         if [(f.path, f.fingerprint) for f in records] != [(f.path, f.fingerprint) for f in after]:
             raise SourceChangedDuringScan("Source changed during scan; no snapshot written")
