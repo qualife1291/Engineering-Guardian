@@ -28,3 +28,8 @@ SQLite indexes and source snippets can contain proprietary information, and must
 **Important:** GitHub retains old commits, PR diffs, forks and caches. Removing an identifier in the latest commit does not erase copies in earlier commits. If sensitive data appeared previously, evaluate changing repository visibility, deleting/refactoring old history with explicit owner approval, and rotating any actually exposed secrets. Never force-push or rewrite published history without authorization and a communication plan.
 
 For security reports follow [SECURITY.md](../SECURITY.md).
+
+
+## Tree-sitter grammar downloads
+
+The optional parser package is installed by the developer. Grammar binaries are downloaded into the local parser cache only after an explicit \`guardian parsers install\` command. Normal scans check the local cache and do not access the network. Guardian does not upload source code to obtain a grammar. Do not share the SQLite index; it contains project structure and symbol metadata.

@@ -1,29 +1,43 @@
-# POC Architecture
+# Architecture — Engineering Guardian v0.5.0
 
-## Current executable implementation
+## Executable implementation
 
-This repository currently contains a dependency-free Python prototype to validate the workflow and benchmark harness. It is deliberately not represented as the production Rust implementation.
+The current product is an offline-first Python POC. It is not a Rust/SCIP compiler index.
 
-- `scanner.py`: local filesystem inventory, exclusions, file fingerprints.
-- `parser.py`: Python AST extraction and heuristic regex/brace extraction for other languages.
-- `store.py`: SQLite snapshot, file, symbol, edge and FTS storage.
-- `engine.py`: scan orchestration and candidate graph construction.
-- `cli.py`: JSON CLI for humans/automation.
-- `service.py`: shared read-only-source service with mandatory freshness checks.
-- `mcp.py`: Claude Code STDIO MCP server fixed to one authorized local workspace.
-- `context.py`: bounded context packs that reject stale source bytes.
-- `offline.py`: deterministic tree, outline, hotspots, ranked repo map, no-Git snapshot diff and Markdown brief. Uses PageRank-like ranking and a diversity-first greedy selection.
-- `diagnostics.py`: anonymized JSONL timings and sanitized support ZIPs (no source code or prompts).
-- `engine.py`: reuse unchanged snapshots and file-level parse results; commit graph atomically.
+- \`scanner.py\`: local filesystem inventory, exclusions and BLAKE2b fingerprints.
+- \`parser.py\`: dependency-free Python AST and heuristic fallback parser.
+- \`treesitter.py\`: optional Tree-sitter grammar availability, syntax extraction, imports, call references, local binding resolution and body fingerprints. It never downloads a grammar during scan.
+- \`engine.py\`: snapshot orchestration, unchanged-file reuse, reference resolution, candidate/structural graph creation and atomic commit.
+- \`store.py\`: SQLite snapshots plus files, symbols, edges, parser metadata, imports, references and per-symbol fingerprints.
+- \`offline.py\`: tree, outline, hotspots, repo map, snapshot diff, Markdown brief and Change X-Ray.
+- \`service.py\`: common freshness-checked boundary for CLI and MCP.
+- \`cli.py\`: offline CLI, explicit grammar installation and impact analysis.
+- \`mcp.py\`: stdio MCP tools for status, scan, navigation, parser status and Change X-Ray.
+- \`context.py\`: bounded source-backed context that refuses stale snapshots.
+- \`diagnostics.py\`: allowlisted operational telemetry and sanitized support bundles.
 
-## Planned production implementation
+## Parser lifecycle and offline guarantee
 
-Replace the prototype core with Rust, Rayon, Tree-sitter and BLAKE3. Import SCIP semantic indexes for supported languages. Keep SQLite as the first persistence layer. Add contract resolvers for MethodChannel, HTTP/OpenAPI, gRPC/Protobuf, SQL and event systems.
+1. Install the optional \`treesitter\` Python extra if syntax-tree support is wanted.
+2. Run \`guardian parsers install --languages ...\` explicitly to download chosen grammar binaries to the user cache.
+3. Scan checks only whether the requested grammar is already available locally. It does not fetch a manifest, binary, model or source.
+4. If no grammar is installed, Python AST / regex fallback remains available.
+5. File reuse requires the same parser backend; installing a grammar after a previous scan causes affected files to be parsed again.
 
-## Trust model
+## Resolution levels
 
-Structural matches are not automatically semantic truth. Every edge records a resolution level. Regex-based call candidates are `ast_candidate`/heuristic and must not be shown as exact calls. Unsupported or dynamic relationships remain unresolved.
+- \`tree_sitter_import_binding\`: explicit local import alias resolves to one local declaration.
+- \`tree_sitter_same_class\`: \`self\`/\`this\`/\`cls\` receiver and one matching method in the enclosing type.
+- \`tree_sitter_same_file_unique\`: one same-file declaration matches an unqualified call.
+- \`ast_candidate\`: globally unique unresolved name or dependency-free heuristic candidate; not a verified binding.
+- \`unresolved\`: dynamic, ambiguous or unsupported references are retained without an edge.
 
-## Offline-first user-facing operations
+Tree-sitter gives syntactic structure. It does not perform compiler type checking, runtime dispatch, reflection analysis or dependency-injection resolution.
 
-The CLI and MCP both call `GuardianService`. All offline navigation queries require a fresh snapshot, access only the configured root, and bound their outputs. The new `repo-map` is a **heuristic navigation aid**; it must not be interpreted as proof of exact call/contract dependencies. See [Offline Intelligence](OFFLINE_INTELLIGENCE.md) and [Multi-agent](MULTI_AGENT.md).
+## Change X-Ray
+
+Compare two immutable snapshots, identify changed declarations using signature/body hashes, then walk reverse edges for dependents. Resolved imports from test-like files provide test suggestions. Unresolved references to changed names are shown as unknowns. No tests are executed and no source file is modified.
+
+## Future work
+
+SCIP/LSP compiler indexes, cross-language event/HTTP/SQL contracts, dependency-injection maps, dataflow/slicing, test coverage set-cover and a visual graph UI remain future work.

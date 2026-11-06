@@ -2,7 +2,7 @@
 
 **Local-first code intelligence for developers and AI coding assistants.** Scan a folder (Git not required), find symbols and candidate call relationships, and give Claude Code small, source-backed context instead of dumping an entire codebase into an LLM.
 
-> **Status: v0.4.0 proof of concept (Python, standard library only).** This is **not** the future Rust/Tree-sitter/SCIP engine. Python uses AST; Dart, Kotlin, TypeScript and other supported languages currently use regex/brace heuristics. All `CALLS` edges are **candidates, not compiler-verified dependencies**. Do not rely on them alone for merge/security decisions.
+> **Status: v0.5.0 proof of concept.** Tree-sitter is optional; after explicitly installing local grammars, supported languages use syntax-tree extraction. If a grammar is unavailable, Python AST or regex/brace fallback is used. `tree_sitter_*` edges are conservative syntactic bindings, while `ast_candidate` edges are heuristics. Neither is compiler/type-checker proof; dynamic dispatch and reflection can remain unresolved.
 
 [Changelog](CHANGELOG.md) · [Tiếng Việt: bắt đầu nhanh](docs/EASY_START_VI.md) · [Claude Code MCP](docs/CLAUDE_CODE.md) · [Ví dụ sử dụng](docs/USAGE_EXAMPLES_VI.md) · [Đọc nhanh cho AI](AGENTS.md)
 
@@ -19,9 +19,10 @@ python3 -m ucg.cli --root /path/to/project repo-map --focus processOrder --max-c
 python3 -m ucg.cli --root /path/to/project brief --format markdown > codebase-brief.md
 # After modifying the project, run scan again, then:
 python3 -m ucg.cli --root /path/to/project diff
+python3 -m ucg.cli --root /path/to/project impact
 ~~~
 
-**Large source files** can be navigated via function outlines rather than read in full. PageRank-style file ranking and a diversity-first symbol map prioritize what to inspect. The exact content hash diff works without Git; symbol/logic change detection is still heuristic. See [offline algorithms and limitations](docs/OFFLINE_INTELLIGENCE.md).
+**Large source files** can be navigated via function outlines rather than read in full. PageRank-style file ranking and a diversity-first symbol map prioritize what to inspect. The exact content hash diff works without Git. Optional Tree-sitter adds syntax-aware symbols/imports/call sites; [Change X-Ray](docs/TREE_SITTER_CHANGE_XRAY.md) compares indexed snapshots and traces statically resolved dependents without running tests.
 
 **AI integrations are optional:** Claude Code has the tested project-scoped MCP workflow; other stdio MCP-capable clients can use the same server (see [Multi-agent guide](docs/MULTI_AGENT.md)). No cloud endpoint or user source is automatically uploaded by Guardian.
 
@@ -33,7 +34,7 @@ python3 -m ucg.cli --root /path/to/project diff
 | **Windows 10/11 native** | **`Start Engineering Guardian.cmd`** | **[Windows / PowerShell setup](docs/WINDOWS_SETUP_VI.md)** |
 | Linux / WSL2 | Python CLI or Bash launcher | [Claude Code](docs/CLAUDE_CODE.md) |
 
-Guardian itself needs **Python 3.11+**, no Rust, Docker or model API key for scanning. Git is optional when extracting a downloaded ZIP. Python environments for native Windows and WSL2 are separate.
+Guardian itself needs **Python 3.11+**, no Rust, Docker or model API key. Tree-sitter is optional; the core fallback scanner works without it. Git is optional when extracting a downloaded ZIP. Python environments for native Windows and WSL2 are separate.
 
 ### macOS (2-minute setup)
 
@@ -43,7 +44,10 @@ Clone the repository or extract the ZIP, then open the project:
 cd /path/to/Engineering-Guardian
 python3 --version             # Python 3.11+
 python3 -m unittest discover -s tests -q
-```
+# Optional: enable syntax-tree parsing, then explicitly cache grammars.
+python3 -m pip install -e ".[treesitter]"
+python3 -m ucg.cli --root . parsers install --languages python,typescript,javascript,dart,kotlin,java,sql,go,rust
+~~~
 
 **Option A — Interactive menu:** double-click `Start Engineering Guardian.command` (or run `./"Start Engineering Guardian.command"`). Select a source folder using Finder drag-and-drop, choose scan/search/context. No Git or model API key required.
 
@@ -145,3 +149,18 @@ MIT. See [LICENSE](LICENSE).
 ## Public repository privacy
 
 All published usage examples must be generic. See [privacy and history policy](docs/PRIVACY.md). Runtime logs are separate from version history; see [CHANGELOG](CHANGELOG.md) and [diagnostics](docs/DIAGNOSTICS.md).
+
+
+## Tree-sitter and Change X-Ray
+
+Install the optional engine and grammar binaries only when you choose to enable them:
+
+~~~bash
+python3 -m pip install -e ".[treesitter]"
+python3 -m ucg.cli --root /path/to/project parsers status
+python3 -m ucg.cli --root /path/to/project parsers install --languages python,typescript,javascript,dart,kotlin,java,sql,go,rust
+python3 -m ucg.cli --root /path/to/project scan
+python3 -m ucg.cli --root /path/to/project impact
+~~~
+
+The install command downloads grammars into the local user cache. Scanning never downloads parsers. Change X-Ray compares two indexed snapshots and returns static dependents/test suggestions; it does not execute tests or guarantee runtime impact. See [Tree-sitter & Change X-Ray](docs/TREE_SITTER_CHANGE_XRAY.md).

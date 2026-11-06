@@ -5,9 +5,30 @@ All notable **released** changes to Engineering Guardian are recorded here, foll
 ## [Unreleased]
 
 ### Planned (not implemented)
-- Tree-sitter and SCIP/LSP precise semantic indexing for multiple languages.
-- Cross-language MethodChannel, HTTP, SQL and event contract resolution.
-- Change X-Ray UI, source-linked diagrams and CI benchmark regression gates.
+- Compiler-grade SCIP/LSP semantic resolution and cross-language MethodChannel, HTTP, SQL and event contracts.
+- Change X-Ray visual UI, source-linked diagrams and CI accuracy/performance regression gates.
+
+## [0.5.0] - 2026-11-06
+
+### Added
+- Optional Tree-sitter parsing via the language pack for Python, TypeScript, JavaScript, Java, Kotlin, Dart, Go, Rust and SQL when a grammar is explicitly installed.
+- Explicit \`guardian parsers status/install\` commands. Normal scan checks only local parser availability and never downloads grammars or contacts a network.
+- Syntax-aware declaration, call-site and import extraction, parse-error coverage, declaration/body fingerprints and persistent analysis metadata.
+- Conservative local resolution for explicit import bindings, \`self\`/\`this\` methods and unique same-file declarations; unresolved calls remain visible rather than guessed.
+- Offline Change X-Ray across snapshots: added/deleted/signature/body-changed symbols, direct/transitive reverse dependents, test files reached through resolved imports and unresolved matching references.
+- CLI \`impact\` and MCP \`guardian_change_impact\` / \`guardian_parser_status\` tools.
+- Tree-sitter integration CI and tests for import aliases, UTF-8 line spans, ambiguous names and change impact.
+
+### Changed
+- SQLite snapshots now persist parser backend, grammar version, import bindings, syntax references and per-symbol body fingerprints.
+- Schema identity changes force old snapshots without parser metadata to be rebuilt once; later scans reuse files only when the parser backend matches.
+- CALLS graph distinguishes \`tree_sitter_*\` syntactic bindings from \`ast_candidate\` heuristics.
+
+### Limitations
+- Tree-sitter describes syntax, not types or runtime semantics. Shadowing, dynamic dispatch, reflection, dependency injection, generated code and unsupported import/module patterns may remain unresolved.
+- Grammar installation is optional and requires an explicit network-backed install step. Scan itself remains offline.
+- Change X-Ray suggests impact and tests; it does not run tests or guarantee complete impact coverage.
+- No SCIP/LSP compiler-grade index, cross-language contract graph, GUI or distributed concurrent-scan coordinator.
 
 ## [0.4.0] - 2026-11-06
 

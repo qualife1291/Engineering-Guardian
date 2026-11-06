@@ -1,31 +1,30 @@
-# Acceptance matrix — Engineering Guardian v0.4.0
+# Acceptance matrix — Engineering Guardian v0.5.0
 
-This is an offline-first Python proof of concept (POC), not a verified semantic program-analysis system.
+This is an offline-first Python proof of concept (POC), not a compiler-grade semantic analyzer.
 
 ## Accepted in the current POC (covered by CI)
 
 - Scan local folders with or without Git; exclude common secret names, generated folders and symlinks.
-- Python AST symbol extraction, heuristic structural extraction for other supported languages.
-- Versioned SQLite snapshots, parsing reuse, changed-file reparse and atomic commits.
-- Source fingerprint checks to refuse stale queries.
-- Symbol lookup, candidate callers/callees, MCP stdio and local CLI JSON.
-- Offline tree, outline, hotspots, repo-map, diff and deterministic Markdown brief.
-- JSONL diagnostic metrics and sanitized support bundles.
-- Windows and Ubuntu CI; public-example privacy regression tests.
+- Python AST and regex fallback when optional Tree-sitter grammars are not installed.
+- Optional Tree-sitter parsing for supported languages after explicit grammar installation.
+- Syntax-based extraction of declarations, import statements, call sites, parse errors and declaration/body fingerprints.
+- Conservative resolution of explicit local import aliases, \`self\`/\`this\` methods and unique same-file declarations.
+- Persist parser backend, import bindings, references and symbol hashes in versioned SQLite snapshots.
+- Reuse unchanged files only when the parser backend is unchanged; source freshness is checked before queries.
+- Offline Change X-Ray: symbol changes, direct/transitive static dependents, test-like files imported from changed modules and unresolved matching references.
+- CLI and MCP status/navigation/impact tools; Windows and Linux CI; privacy regression checks.
 
-## Not accepted or not implemented
+## Not accepted / not implemented
 
-- Verified cross-language call graph, MethodChannel/HTTP event resolution or dataflow.
-- Compiler-grade SCIP/LSP and native Tree-sitter/Rust performance core.
-- Automatic formatting, documentation coverage and semantic code-quality verdicts.
-- Runtime behavior reconstruction or semantic equivalence and impact guarantees.
-- File watchers, multi-process scan coordination and complete semantic invalidation.
-- Interactive code-graph GUI, self-updating wiki or integrated code editor.
-- End-to-end ChatGPT versus Guardian inference-latency win.
-- Production privacy/data-governance certification for arbitrary private code.
+- Compiler/type-checker proof, full semantic call graph or complete cross-language dependency resolution.
+- Dynamic dispatch, reflection, dependency injection, runtime plugin registration and generated-code relationships.
+- Complete Python package resolution, TypeScript path aliases/tsconfig project references, Java/Kotlin build graph, Go module workspaces or Rust macro expansion.
+- MethodChannel, HTTP/OpenAPI, gRPC, SQL schema/dataflow and event-bus contract linking.
+- Running test suites, coverage-based test selection, semantic diff or guaranteed impact completeness.
+- SCIP/LSP import, native Rust scanner, GUI, file watcher or distributed scan coordinator.
 
 ## Release gates
 
-Run all GitHub Actions test jobs on Windows and Ubuntu. Keep the changelog, ucg.__version__ and pyproject.toml aligned. Audit public source/docs/reports for private identifiers. Read [privacy notes](PRIVACY.md).
+Run all GitHub Actions jobs, including Tree-sitter integration on Linux and Windows. Keep \`CHANGELOG.md\`, \`ucg.__version__\` and \`pyproject.toml\` aligned. Audit public files for private identifiers and review [privacy notes](PRIVACY.md).
 
-Passing tests means the POC contracts work; it does NOT guarantee full codebase comprehension or safe changes.
+Passing tests means the implemented POC contracts work; it does NOT guarantee full codebase comprehension, correct runtime dependencies or safe changes.

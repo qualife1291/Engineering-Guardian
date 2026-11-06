@@ -1,6 +1,6 @@
 # Agent instructions — read this first (under 250 tokens)
 
-Engineering Guardian v0.4.0 is a **local, source-read-only Python POC**. It indexes arbitrary folders (Git not required) into external SQLite and serves Claude Code via MCP. **It is not Rust/Tree-sitter/SCIP yet.** Non-Python symbols and **all CALLS edges are heuristic candidates**.
+Engineering Guardian v0.5.0 is a **local, source-read-only Python POC**. Optional Tree-sitter grammars add syntax extraction and conservative import/local bindings; Python AST/regex fallback remains. No SCIP/type-checker/runtime proof.
 
 - Entry points: `ucg/cli.py` (`python -m ucg.cli`, no AI) and `ucg/mcp.py` (stdio MCP for AI clients).
 - Flow: `scanner.py` → `parser.py` → `engine.py` → `store.py` → `service.py`; `offline.py` supplies maps/outlines/diffs; `context.py` serves snippets.
@@ -12,3 +12,6 @@ Engineering Guardian v0.4.0 is a **local, source-read-only Python POC**. It inde
 - Windows entry points: `scripts/connect_claude.ps1`, `scripts/start_windows.ps1`, `Start Engineering Guardian.cmd`; WSL2 uses Bash. More: `docs/PROJECT_MAP.md`, `docs/DOCS_INDEX.md`.
 
 - Public repository: NEVER commit personal paths, named private apps, customer data or real benchmark environment paths. Privacy regression test is mandatory.
+
+- Tree-sitter is optional. Never download grammars during scan; only explicit \`guardian parsers install\` may access the network. Read \`docs/TREE_SITTER_CHANGE_XRAY.md\` before modifying resolution.
+- Change X-Ray is static impact guidance, not a complete dependency proof and does not run tests.

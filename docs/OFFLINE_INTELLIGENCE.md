@@ -51,3 +51,18 @@ It does not reconstruct every business flow, build a precise Dart/Kotlin/TypeScr
 **Current performance caveat:** to prevent serving stale data, the service checks source fingerprints before queries. On very large source trees this O(files + input bytes) scan can dominate latency. We therefore report complete command timings instead of relying on tiny in-database graph query timings.
 
 For precision claims, benchmark against a manually verified set of symbols, cross-file references and expected impacts. Short response time alone does not mean accurate reasoning.
+
+
+## Optional syntax-tree parser and Change X-Ray
+
+The no-AI commands still work without parser extras. To get syntax-aware symbols and conservative local import bindings, install the optional package and grammars explicitly:
+
+~~~bash
+python3 -m pip install -e ".[treesitter]"
+python3 -m ucg.cli --root /path/to/project parsers status
+python3 -m ucg.cli --root /path/to/project parsers install --languages python,typescript
+python3 -m ucg.cli --root /path/to/project scan
+python3 -m ucg.cli --root /path/to/project impact
+~~~
+
+The grammar installer needs network access once. The scan process never downloads grammars. Tree-sitter resolves syntax-level patterns, not compiler semantics; see [TREE_SITTER_CHANGE_XRAY.md](TREE_SITTER_CHANGE_XRAY.md).

@@ -1,56 +1,54 @@
-# Project map — fast onboarding (~1-minute read)
+# Project map — fast onboarding
 
-## What exists today
+## Current implementation
 
-POC v0.4.0, **no production Rust/Tree-sitter/SCIP**. External source is read-only; `guardian scan` creates content-addressed snapshots; unchanged files are reused. CLI and Claude Code MCP call the same service; on-disk content is checked before source context is served.
+v0.5.0 is a Python POC with optional Tree-sitter parsing and offline Change X-Ray. Scanned source remains read-only. SQLite snapshots and parser caches live outside the scanned project.
 
-```text
-scripts/connect_claude.sh / connect_claude.ps1 --> ucg/mcp.py --> ucg/service.py
-python -m ucg.cli ---------/                    |
-                                                 v
-ucg/scanner.py --> ucg/parser.py --> ucg/engine.py --> ucg/store.py (SQLite)
-                                                 |
-                                        ucg/context.py
-                                                 |
-                                        ucg/diagnostics.py (JSONL)
-```
+~~~text
+CLI / menu / MCP
+      |
+  GuardianService (freshness gate)
+      |
+  scan_workspace
+      |
+  scanner.py -> parser.py fallback
+            -> treesitter.py (optional local grammar)
+      |
+  engine.py -> resolve imports/references
+      |
+  store.py (SQLite snapshots)
+      |-- files / symbols / edges
+      |-- file_analysis / imports / symbol_references / symbol_analysis
+      |
+  offline.py -> tree / outline / repo-map / diff / impact
+~~~
 
-| Need | Open only this file |
+| Need | Open this file |
 |---|---|
-| Windows installers/launchers | `scripts/windows_common.ps1`, `scripts/start_windows.ps1`, `scripts/connect_claude.ps1`, `Start Engineering Guardian.cmd` |
-| Offline tree/outline/map/hotspots/diff | `ucg/offline.py`, `ucg/service.py`, `ucg/cli.py`, `ucg/mcp.py` |
-| Add CLI command | `ucg/cli.py` |
-| Add MCP tool | `ucg/mcp.py`, `ucg/service.py` |
-| Change scan/cache | `ucg/scanner.py`, `ucg/engine.py` |
-| Parse language | `ucg/languages.py`, `ucg/parser.py` |
-| Symbol IDs/graph | `ucg/models.py`, `ucg/store.py` |
-| Context token budget | `ucg/context.py` |
-| Logging/privacy | `ucg/diagnostics.py` |
-| Integration tests | `tests/test_mcp_incremental.py` |
-| Baselines | `benchmarks/` and `docs/BENCHMARK.md` |
+| Optional parser and binding rules | \`ucg/treesitter.py\` |
+| Change X-Ray algorithm | \`ucg/offline.py\` |
+| Scan/reuse/atomic snapshots | \`ucg/engine.py\` |
+| SQLite migrations/queries | \`ucg/store.py\` |
+| CLI grammar install and impact | \`ucg/cli.py\` |
+| MCP tools | \`ucg/mcp.py\` |
+| Shared freshness boundary | \`ucg/service.py\` |
+| Symbol/edge records | \`ucg/models.py\` |
+| Fallback parser | \`ucg/parser.py\` |
+| Parser/impact integration tests | \`tests/test_treesitter.py\` |
+| Cross-platform/legacy regressions | \`tests/\` |
 
 ## Commands
 
-```bash
-python3 -m ucg.cli --root /path/to/app scan
-python3 -m ucg.cli --root /path/to/app status
-python3 -m ucg.cli --root /path/to/app search render
-python3 -m ucg.cli --root /path/to/app support-bundle
-```
+~~~bash
+python -m ucg.cli --root /path/to/project parsers status
+python -m ucg.cli --root /path/to/project parsers install --languages python,typescript
+python -m ucg.cli --root /path/to/project scan
+python -m ucg.cli --root /path/to/project impact
+~~~
 
-## Platform and documentation navigation
+## Trust constraints
 
-- Windows native: [WINDOWS_SETUP_VI.md](WINDOWS_SETUP_VI.md), `Start Engineering Guardian.cmd`.
-- macOS/Linux/WSL2: [EASY_START_VI.md](EASY_START_VI.md), `scripts/connect_claude.sh`.
-- Full map: [DOCS_INDEX.md](DOCS_INDEX.md); coding rules: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
-
-## Important constraints
-
-- Source may contain confidential code; an AI context response can transmit selected source to the calling model.
-- Candidate graph edges are heuristic, **not trusted impact analysis**.
-- Source file modification between scan and query yields stale error and requires a refresh.
-- Source structure is computed without Git; the integration with `claude mcp` is per workspace.
-
-## Offline v0.4 navigation path
-
-`ucg/offline.py` supplies deterministic tree/outline/hotspots/PageRank-style repo-map/diff/brief. Exposed through GuardianService, CLI and MCP, these work without AI. CLI and MCP machine output use UTF-8 on Windows and Unix. See [OFFLINE_INTELLIGENCE.md](OFFLINE_INTELLIGENCE.md).
+- A Tree-sitter edge is a syntactic binding with a stated resolution reason, not compiler proof.
+- \`ast_candidate\` is heuristic and lower confidence; unresolved references remain visible.
+- Change X-Ray suggests dependent code and tests but does not execute tests or guarantee completeness.
+- Queries require a fresh source fingerprint. Concurrent scans still need external coordination.
