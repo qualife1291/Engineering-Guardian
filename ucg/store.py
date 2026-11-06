@@ -6,6 +6,7 @@ snapshot are committed as a single transaction, making partial scans invisible.
 from __future__ import annotations
 
 import sqlite3
+import time
 from pathlib import Path
 from .models import (FileRecord, SymbolRecord, EdgeRecord, FileAnalysisRecord, ImportRecord, ReferenceRecord, SymbolAnalysisRecord)
 
@@ -85,8 +86,30 @@ class UCGStore:
         self.db_path = str(db_path)
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.db_path, timeout=30)
-        self.conn.execute("PRAGMA journal_mode=WAL")
-        self.conn.executescript(SCHEMA)
+        self.conn.execute("PRAGMA busy_timeout=30000")
+        # WAL mode is a database-level transition. Simultaneous first opens can
+        # race here even when sqlite3.connect(timeout=...) is configured.
+        for attempt in range(12):
+            try:
+                mode = self.conn.execute("PRAGMA journal_mode").fetchone()[0]
+                if str(mode).lower() != "wal":
+                    self.conn.execute("PRAGMA journal_mode=WAL")
+                break
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower() or attempt == 11:
+                    self.conn.close()
+                    raise
+                time.sleep(min(0.05 * (2 ** attempt), 1.0))
+        self.conn.execute("PRAGMA synchronous=NORMAL")
+        for attempt in range(12):
+            try:
+                self.conn.executescript(SCHEMA)
+                break
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower() or attempt == 11:
+                    self.conn.close()
+                    raise
+                time.sleep(min(0.05 * (2 ** attempt), 1.0))
 
     def close(self):
         self.conn.close()

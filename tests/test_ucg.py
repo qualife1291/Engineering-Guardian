@@ -5,6 +5,7 @@ from ucg.parser import parse_file
 from ucg.engine import scan_workspace
 from ucg.store import UCGStore
 from ucg.context import build_context_pack
+from ucg.treesitter import parser_available
 
 class UCGTests(unittest.TestCase):
     def test_scan_non_git_folder(self):
@@ -65,7 +66,8 @@ class UCGTests(unittest.TestCase):
             self.assertEqual(len(edges), 1)
             self.assertEqual(edges[0]["evidence_path"], "consumer.py")
             self.assertIn("provider.py", edges[0]["to"])
-            self.assertEqual(edges[0]["resolution"], "ast_candidate")
+            expected_resolution = "tree_sitter_import_binding" if parser_available("python") else "ast_candidate"
+            self.assertEqual(edges[0]["resolution"], expected_resolution)
             store.close()
 
     def test_dart_nullable_object_return_type(self):
