@@ -1,6 +1,7 @@
 """Tree-sitter integration tests; CI installs grammars explicitly before running these."""
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
