@@ -44,6 +44,23 @@ class TreeSitterPythonTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual(parsed.symbols[0].name, "deep")
 
+    def test_dynamic_dispatch_stays_unresolved_and_syntax_errors_are_reported(self):
+        source = (
+            "def caller(client, value):\n"
+            "    return client.send(value)\n"
+            "\n"
+            "def broken(:\n"
+            "    return 1\n"
+        )
+        parsed = parse_tree_sitter("dynamic.py", "python", source)
+        self.assertIsNotNone(parsed)
+        self.assertGreater(parsed.file_analysis.error_count, 0)
+        resolve_references(Path("."), parsed.symbols, parsed.imports,
+                           parsed.references, parsed.symbol_analysis)
+        self.assertTrue(parsed.references)
+        self.assertEqual(parsed.references[0].resolution, "unresolved")
+        self.assertIn("Receiver type is not known", parsed.references[0].reason)
+
     def test_self_method_binding_and_ambiguous_same_file_stays_unresolved(self):
         source = (
             "class Service:\n"
@@ -110,8 +127,7 @@ class TreeSitterPolyglotSmokeTests(unittest.TestCase):
         }
         for language, source in examples.items():
             with self.subTest(language=language):
-                if not parser_available(language):
-                    self.skipTest(f"{language} grammar not installed in this CI environment")
+                self.assertTrue(parser_available(language), f"{language} grammar was requested in CI but is missing")
                 parsed = parse_tree_sitter(f"sample.{language}", language, source)
                 self.assertIsNotNone(parsed)
                 self.assertEqual(parsed.file_analysis.parser_backend, "tree_sitter")
