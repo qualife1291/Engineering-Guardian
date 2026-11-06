@@ -1,0 +1,89 @@
+name: Engineering Guardian Stress Benchmarks
+
+on:
+  push:
+    branches:
+      - feat/tree-sitter-precise-symbols-change-xray-v0.5.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    name: \${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: polyglot-monolith-100k-plus-10k-lines
+            files: 100
+            lines: 1000
+            topology: monolith
+            large_file_lines: 10000
+            runs: 3
+          - name: microservices-500-files-500k-lines
+            files: 500
+            lines: 1000
+            topology: microservices
+            large_file_lines: 0
+            runs: 1
+          - name: monorepo-1000-files-1m-lines
+            files: 1000
+            lines: 1000
+            topology: monorepo
+            large_file_lines: 5000
+            runs: 1
+          - name: monorepo-5000-small-files
+            files: 5000
+            lines: 100
+            topology: monorepo
+            large_file_lines: 0
+            runs: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install optional syntax parser
+        run: python -m pip install -e ".[treesitter]"
+      - name: Explicitly install all advertised grammars
+        run: |
+          python -m ucg.cli --root . parsers install --languages python,typescript,javascript,dart,kotlin,java,sql,go,rust,protobuf
+      - name: Generate deterministic project corpus
+        env:
+          CORPUS: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}
+        run: |
+          python -m benchmarks.generate_stress_corpus \
+            --output "$CORPUS" \
+            --files \${{ matrix.files }} \
+            --lines \${{ matrix.lines }} \
+            --topology \${{ matrix.topology }} \
+            --large-file-lines \${{ matrix.large_file_lines }} \
+            --invalid-every 97 \
+            --duplicate-every 211 \
+            --dynamic-every 13 \
+            --symlink-loop
+      - name: Measure cold, warm, incremental, graph, storage and memory
+        env:
+          CORPUS: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}
+          DB: \${{ runner.temp }}/guardian-stress/\${{ matrix.name }}.sqlite
+        run: |
+          mkdir -p stress-results
+          python -m benchmarks.run_stress_benchmark \
+            --source "$CORPUS" \
+            --db "$DB" \
+            --output "stress-results/\${{ matrix.name }}.json" \
+            --runs \${{ matrix.runs }} \
+            --max-rss-mb 4096 \
+            --max-cold-seconds 300
+      - name: Upload raw benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardian-stress-\${{ matrix.name }}
+          path: stress-results/\${{ matrix.name }}.json
+          if-no-files-found: warn
