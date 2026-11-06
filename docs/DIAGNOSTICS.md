@@ -15,7 +15,7 @@ Each line is a self-contained JSON record with version, UTC timestamp, anonymize
 
 **Limitations:** counts and response times are operational quality indicators. They do not establish symbol precision, call-graph recall, correctness of reasoning, or safety of changes. For those, compare findings to manually labeled test fixtures.
 
-For Windows native, `$GUARDIAN_HOME` is a PowerShell environment variable (`$env:GUARDIAN_HOME = 'D:\\GuardianData'`) and defaults to `%USERPROFILE%\\.engineering-guardian`. WSL2 paths and Windows paths must not be mixed. See [Windows setup](WINDOWS_SETUP_VI.md).
+For Windows native, `$GUARDIAN_HOME` is a PowerShell environment variable (`$env:GUARDIAN_HOME = 'C:\\GuardianData'`) and defaults to `%USERPROFILE%\\.engineering-guardian`. WSL2 paths and Windows paths must not be mixed. See [Windows setup](WINDOWS_SETUP_VI.md).
 
 ## View metrics summary without sharing source
 
@@ -50,3 +50,7 @@ The exporter re-sanitizes event fields and includes `environment.json` (OS, Pyth
 ### Privacy caveats
 
 Absolute source paths, function names and source content are omitted from logs. However, file/line counts, OS type and anonymized workspace hash can reveal coarse project characteristics. If that matters, inspect locally and do not share the ZIP. Support bundles are not automatically uploaded to any service.
+
+## Shared bundle linkability
+
+From v0.4.0, exported support bundles replace internal workspace hashes with the literal `redacted`, avoiding a stable workspace fingerprint in the ZIP. Internal local JSONL diagnostics still use a hashed workspace identifier for grouping. Metrics are operational, not semantic accuracy measurements.

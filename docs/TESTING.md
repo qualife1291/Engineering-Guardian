@@ -32,3 +32,7 @@ python3 -m benchmarks.run_benchmark --source ./.benchmark/valid-100 --output ./r
 Include host CPU/RAM/storage, Python version, fixture hash, parser mode, warm/cold cache, medians and p95, precision/recall against ground truth. See `docs/BENCHMARK.md`.
 
 **Do not conflate** local UCG query timings with ChatGPT inference. UCG source coverage is currently heuristic outside Python. Benchmark targets are not guarantees.
+
+## v0.4 offline and privacy tests
+
+Run `python -m unittest discover -s tests -v` from the repository root on Python 3.11+. Tests now include tree/outline/hotspots/repo-map, no-Git snapshot diffs, bounded MCP output, stale-index handling and an automated public-example privacy audit. CI runs on Windows and Ubuntu. Performance measurements of SQLite-only graph queries are *not* end-to-end latency benchmarks, because index freshness checks rehash source files.

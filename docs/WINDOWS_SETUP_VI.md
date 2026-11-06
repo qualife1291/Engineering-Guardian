@@ -6,8 +6,8 @@
 
 | Môi trường | Dùng launcher | Đường dẫn project | Lệnh kết nối Claude |
 |---|---|---|---|
-| **Windows 10/11 native** | `Start Engineering Guardian.cmd` | `D:\Dev\My App` | `scripts\connect_claude.ps1` |
-| **PowerShell 7 trên Windows** | Cũng dùng `.cmd` hoặc `.ps1` | `D:\Dev\My App` | `scripts\connect_claude.ps1` |
+| **Windows 10/11 native** | `Start Engineering Guardian.cmd` | `C:\Projects\My App` | `scripts\connect_claude.ps1` |
+| **PowerShell 7 trên Windows** | Cũng dùng `.cmd` hoặc `.ps1` | `C:\Projects\My App` | `scripts\connect_claude.ps1` |
 | **WSL2 Ubuntu/Linux** | `Start Engineering Guardian.command` qua Bash, hoặc CLI Python | `/mnt/d/Dev/My App` | `scripts/connect_claude.sh` bên trong WSL |
 | **Git Bash native** | Ưu tiên PowerShell native để tránh lẫn Python Windows/Linux | `D:\... ` | PowerShell, không dùng đường dẫn `/mnt/d` |
 
@@ -30,10 +30,10 @@ Hoặc dùng installer chính thức theo [Claude Code setup](https://code.claud
 
 ## 3. Cách dễ nhất: mở bằng hai cú nhấp
 
-1. Tải `Engineering-Guardian` từ [GitHub](https://github.com/qualife1291/Engineering-Guardian) → **Code → Download ZIP**, giải nén ví dụ `D:\Tools\Engineering-Guardian`.
+1. Tải `Engineering-Guardian` từ [repository](../README.md) → **Code → Download ZIP**, giải nén ví dụ `C:\Tools\Engineering-Guardian`.
 2. Nhấp đúp `Start Engineering Guardian.cmd`.
 3. Launcher tạo `.venv` bằng Python 3.11+ hiện có, không tải thư viện Python ngoài Internet.
-4. Chọn `1` trong menu và nhập đường dẫn folder source **Windows native**, ví dụ `D:\Dev\AirVoice Wireless` (có thể có dấu cách).
+4. Chọn `1` trong menu và nhập đường dẫn folder source **Windows native**, ví dụ `C:\Projects\Sample App` (có thể có dấu cách).
 5. Chọn `3` để xem cấu trúc, `4` để tìm symbol, `5/6` để truy vết candidate callers/callees, `10/11` để xem/xuất log.
 
 Script `.cmd` khởi chạy PowerShell với `ExecutionPolicy Bypass` **chỉ cho tiến trình đó**, không thay đổi chính sách hệ thống hay User. Hãy xem nội dung script trước khi chạy nếu máy công ty có hạn chế.
@@ -43,16 +43,16 @@ Script `.cmd` khởi chạy PowerShell với `ExecutionPolicy Bypass` **chỉ ch
 Đặt Engineering Guardian bên cạnh folder ứng dụng:
 
 ```text
-D:\Dev\
+C:\Projects\
 ├── Engineering-Guardian\
-└── airvoice-wireless-app\
+└── sample-app\
 ```
 
 Mở **PowerShell** tại folder Engineering Guardian:
 
 ```powershell
-cd 'D:\Dev\Engineering-Guardian'
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\connect_claude.ps1 -ProjectPath 'D:\Dev\airvoice-wireless-app'
+cd 'C:\Projects\Engineering-Guardian'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\connect_claude.ps1 -ProjectPath 'C:\Projects\sample-app'
 ```
 
 Kiểm tra script in ra chính xác root và vị trí Python, trả lời `y` nếu đồng ý. Đây là MCP **local scope** chỉ có hiệu lực trong project được chọn; không cấp quyền ghi vào source cho Guardian.
@@ -60,7 +60,7 @@ Kiểm tra script in ra chính xác root và vị trí Python, trả lời `y` n
 Sau đó:
 
 ```powershell
-cd 'D:\Dev\airvoice-wireless-app'
+cd 'C:\Projects\sample-app'
 claude
 ```
 
@@ -71,13 +71,13 @@ Nếu muốn bỏ kết nối: từ folder ứng dụng dùng `claude mcp remove
 ## 5. Dùng hoàn toàn bằng CLI (không cần Claude)
 
 ```powershell
-cd 'D:\Dev\Engineering-Guardian'
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' scan
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' status
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' overview
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' search downloadProfile
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' log-summary
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' support-bundle
+cd 'C:\Projects\Engineering-Guardian'
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' scan
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' status
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' overview
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' search processOrder
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' log-summary
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' support-bundle
 ```
 
 ## 6. Đổi vị trí cache/log (ổ D: hoặc SSD ngoài)
@@ -85,7 +85,7 @@ cd 'D:\Dev\Engineering-Guardian'
 Trước khi chạy launcher / Claude Code **trong cùng PowerShell session**:
 
 ```powershell
-$env:GUARDIAN_HOME = 'D:\GuardianData'
+$env:GUARDIAN_HOME = 'C:\GuardianData'
 ```
 
 Mặc định dữ liệu nằm tại `%USERPROFILE%\.engineering-guardian\`, với `indexes\` (SQLite) và `diagnostics\YYYY-MM-DD\*.jsonl`. Nếu nhấp đúp `.cmd` từ Explorer, biến môi trường chỉ đặt trong một PowerShell khác sẽ không tự áp dụng. Khi cần ổ D:, hãy chạy launcher trong cửa sổ PowerShell đã đặt biến:
@@ -100,8 +100,8 @@ Không đặt `GUARDIAN_HOME` bên trong folder source đang quét.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' doctor
-.\.venv\Scripts\python.exe -m ucg.cli --root 'D:\Dev\airvoice-wireless-app' support-bundle
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' doctor
+.\.venv\Scripts\python.exe -m ucg.cli --root 'C:\Projects\sample-app' support-bundle
 ```
 
 Đọc [diagnostics](DIAGNOSTICS.md) trước khi gửi ZIP; chỉ gửi bản đã xem xét, **không gửi index SQLite hoặc source riêng tư**. Sau khi cập nhật repo bằng `git pull` hoặc giải nén bản mới, chạy lại self-check và kiểm tra MCP.
@@ -117,8 +117,12 @@ Không đặt `GUARDIAN_HOME` bên trong folder source đang quét.
 | Path có dấu cách | Bao trong dấu nháy đơn `'D:\My Projects\App'`. |
 | MCP không Connected | Chạy `claude mcp list` tại đúng folder ứng dụng; kiểm tra Python trong `.venv\Scripts`, thử đăng ký lại sau khi xóa registration cũ. |
 | Project đổi nhưng Guardian trả kết quả cũ | Chạy `guardian_scan` hoặc CLI `scan`; xem `status`. |
-| Muốn dùng WSL2 | Cài Python/Claude trong **WSL**, chạy `bash scripts/connect_claude.sh /mnt/d/Dev/airvoice-wireless-app`. Không dùng PowerShell script trong WSL. |
+| Muốn dùng WSL2 | Cài Python/Claude trong **WSL**, chạy `bash scripts/connect_claude.sh /mnt/d/Dev/sample-app`. Không dùng PowerShell script trong WSL. |
 
 ## 9. Bảo mật & giới hạn
 
 Guardian **không chạy source ứng dụng**, không cấp tool sửa file hoặc chạy shell trong MCP. Nó **có thể gửi các đoạn source được yêu cầu tới mô hình Claude**, nên hãy tuân thủ chính sách dữ liệu của tổ chức. Claude Code có quyền riêng cho các công cụ khác; cấu hình Guardian không giới hạn các quyền đó. Chi tiết tại [SECURITY.md](../SECURITY.md).
+
+## 10. Dùng hoàn toàn offline (không cần Claude Code)
+
+Sau khi chạy `Start Engineering Guardian.cmd` và quét lần đầu, menu `12–17` cho phép xem cây folder, outline file dài, hotspots, repo map, so sánh snapshot và xuất báo cáo Markdown. Không cần đăng ký MCP hoặc tài khoản AI. Xem [Offline Intelligence](OFFLINE_INTELLIGENCE.md) và [Multi-agent](MULTI_AGENT.md).

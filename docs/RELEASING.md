@@ -10,3 +10,6 @@
 8. Release notes must distinguish implemented features from future roadmap.
 
 SemVer guideline: patch for compatible fixes, minor for new compatible features, major for breaking tool/API/schema changes. POC releases are `0.x` and can still evolve rapidly.
+
+9. Run `python -m unittest tests.test_offline_privacy -v` and review **every tracked text file**, including benchmark JSON, for personal paths, customers, credentials and proprietary source. See [PRIVACY.md](PRIVACY.md).
+10. A sanitized current commit does **not** remove sensitive content from earlier commits or forks. Never force-push shared history without explicit repository-owner approval.

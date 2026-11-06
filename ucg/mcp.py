@@ -31,11 +31,18 @@ TOOL_LIST=[
     {"name":"guardian_get_context", "description":"Read small source snippets backed by file fingerprints; fails closed for stale snapshots. Source is sent only to requesting agent.",
      "inputSchema":{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":200},
                                         "max_chars":{"type":"integer","minimum":256,"maximum":32000}},"required":["query"],"additionalProperties":False}},
+    {"name":"guardian_tree","description":"Offline, bounded tree of recognized indexed source files; helps navigate complex folders without reading code.","inputSchema":{"type":"object","properties":{"depth":{"type":"integer","minimum":1,"maximum":20},"limit":{"type":"integer","minimum":1,"maximum":1000}},"additionalProperties":False}},
+    {"name":"guardian_outline","description":"List structural definitions and line spans of one large indexed source file, without source bodies.","inputSchema":{"type":"object","properties":{"file":{"type":"string","minLength":1,"maxLength":4096},"limit":{"type":"integer","minimum":1,"maximum":300}},"required":["file"],"additionalProperties":False}},
+    {"name":"guardian_hotspots","description":"Find large functions/files using local structural heuristics; does NOT claim poor code quality.","inputSchema":{"type":"object","properties":{"min_lines":{"type":"integer","minimum":1,"maximum":100000},"min_function_lines":{"type":"integer","minimum":1,"maximum":100000},"limit":{"type":"integer","minimum":1,"maximum":100}},"additionalProperties":False}},
+    {"name":"guardian_repo_map","description":"Compact local symbol map with PageRank-inspired and diverse ranking. No AI/network and no source bodies.","inputSchema":{"type":"object","properties":{"focus":{"type":"string","maxLength":200},"max_chars":{"type":"integer","minimum":256,"maximum":32000},"limit":{"type":"integer","minimum":1,"maximum":500}},"additionalProperties":False}},
+    {"name":"guardian_snapshot_diff","description":"Compare versioned source snapshots without Git using exact file fingerprints and structural symbols; not a semantic diff.","inputSchema":{"type":"object","properties":{"base":{"type":"string","maxLength":100},"head":{"type":"string","maxLength":100},"limit":{"type":"integer","minimum":1,"maximum":1000}},"additionalProperties":False}},
+    {"name":"guardian_offline_brief","description":"Generate read-only local Markdown codebase summary and navigation map; does not write to project.","inputSchema":{"type":"object","properties":{"focus":{"type":"string","maxLength":200},"max_chars":{"type":"integer","minimum":256,"maximum":32000}},"additionalProperties":False}},
     {"name":"guardian_support_log", "description":"Export sanitized JSONL performance/quality diagnostics ZIP with NO source, prompt text or paths. Return local ZIP location.",
      "inputSchema":{"type":"object","properties":{},"additionalProperties":False}},
 ]
 for t in TOOL_LIST:
-    t["annotations"]={"readOnlyHint":True,"destructiveHint":False,"idempotentHint":True,"openWorldHint":False}
+    t["annotations"]={"readOnlyHint":t["name"] not in {"guardian_scan","guardian_support_log"},
+                      "destructiveHint":False,"idempotentHint":True,"openWorldHint":False}
 
 
 class GuardianMCP:
@@ -49,6 +56,12 @@ class GuardianMCP:
             "guardian_get_callers":lambda args:self.service.relations(args["symbol_id"],"reverse",args.get("depth",2)),
             "guardian_get_callees":lambda args:self.service.relations(args["symbol_id"],"forward",args.get("depth",2)),
             "guardian_get_context":lambda args:self.service.context(args["query"],args.get("max_chars",12000)),
+            "guardian_tree":lambda args:self.service.tree(args.get("depth",5),args.get("limit",200)),
+            "guardian_outline":lambda args:self.service.outline(args["file"],args.get("limit",120)),
+            "guardian_hotspots":lambda args:self.service.hotspots(args.get("min_lines",300),args.get("min_function_lines",80),args.get("limit",30)),
+            "guardian_repo_map":lambda args:self.service.repo_map(args.get("focus",""),args.get("max_chars",6000),args.get("limit",80)),
+            "guardian_snapshot_diff":lambda args:self.service.diff(args.get("base"),args.get("head"),args.get("limit",100)),
+            "guardian_offline_brief":lambda args:self.service.brief(args.get("focus",""),args.get("max_chars",6000)),
             "guardian_support_log":lambda args:self.service.support_log(),
         }
 
@@ -121,6 +134,10 @@ class GuardianMCP:
 
 
 def main() -> None:
+    # MCP stdio is UTF-8 JSON-RPC, independent of a host OS's code page.
+    for stream in (sys.stdin, sys.stdout):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="strict")
     p=argparse.ArgumentParser(prog="guardian-mcp",description="Read-only Engineering Guardian stdio MCP server")
     p.add_argument("--root",required=True,help="Single authorized local source folder; cannot be changed by MCP tools")
     p.add_argument("--db",default=None,help="Optional SQLite cache location")

@@ -1,4 +1,6 @@
-# Benchmark Results — Valid 100 × 1,000-Line Fixture
+# Historical Benchmark Results — Valid 100 × 1,000-Line Fixture
+
+> **Historical baseline from the initial Python prototype.** These timings were measured before v0.4.0 offline tools and do not include current index freshness checks or LLM inference. Run fresh benchmarks before making performance claims.
 
 > This report supersedes the first POC benchmark. The original fixture generator truncated files at line 1,000 and could produce syntactically invalid source. The valid fixture pads files with comments instead.
 
@@ -15,7 +17,7 @@
 
 ## Environment
 
-Linux x86_64 container, AMD EPYC 9V74 virtual CPU allocation (5 vCPUs), Python 3.13.5, 5.8 GiB memory visible. These are not measurements on the user's Mac M1.
+Linux x86_64 container, AMD EPYC 9V74 virtual CPU allocation (5 vCPUs), Python 3.13.5, 5.8 GiB memory visible. These are container measurements, not a guarantee for any particular developer machine.
 
 ## Guardian cold-index benchmark (5 runs)
 

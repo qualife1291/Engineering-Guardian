@@ -121,6 +121,63 @@ class GuardianService:
                          truncated=result["truncated"],duration_ms=round(1000*(time.perf_counter()-started),3))
         return result
 
+
+    # Offline service methods use the same freshness guard and diagnostic timer
+    # as the original MCP/CLI tools. No LLM, source writes or shell execution.
+    def _offline_query(self, tool_name: str, reader):
+        started=time.perf_counter()
+        try:
+            store=UCGStore(self.db)
+            try:
+                snapshot=self._guard_latest(store)
+                result=reader(store,snapshot)
+            finally:
+                store.close()
+            self.metrics.log("tool_call",tool_name=tool_name,success=True,
+                             duration_ms=round(1000*(time.perf_counter()-started),3))
+            return result
+        except Exception as exc:
+            self.metrics.error("tool_call",exc,tool_name=tool_name)
+            raise
+
+    def tree(self, depth: int = 5, limit: int = 200) -> dict:
+        from . import offline
+        return self._offline_query("guardian_tree",lambda store,s:offline.tree(store,s,depth,limit))
+
+    def outline(self, path: str, limit: int = 120) -> dict:
+        from . import offline
+        return self._offline_query("guardian_outline",lambda store,s:offline.outline(store,s,path,limit))
+
+    def hotspots(self, min_lines: int = 300, min_function_lines: int = 80, limit: int = 30) -> dict:
+        from . import offline
+        return self._offline_query(
+            "guardian_hotspots",
+            lambda store,s:offline.hotspots(store,s,min_lines,min_function_lines,limit))
+
+    def repo_map(self, focus: str = "", max_chars: int = 6000, limit: int = 80) -> dict:
+        from . import offline
+        return self._offline_query(
+            "guardian_repo_map",
+            lambda store,s:offline.repo_map(store,s,focus,max_chars,limit))
+
+    def diff(self, base: str | None = None, head: str | None = None, limit: int = 100) -> dict:
+        from . import offline
+        return self._offline_query(
+            "guardian_snapshot_diff",
+            lambda store,s:offline.diff(store,str(self.root),base,head,limit))
+
+    def brief(self, focus: str = "", max_chars: int = 6000) -> dict:
+        from . import offline
+        def create(store,snapshot):
+            overview={"snapshot_id":snapshot,**store.overview(snapshot)}
+            filetree=offline.tree(store,snapshot,3,300)
+            hot=offline.hotspots(store,snapshot,300,80,10)
+            mapping=offline.repo_map(store,snapshot,focus,max_chars,60)
+            content=offline.brief(overview,filetree,hot,mapping)
+            return {"snapshot_id":snapshot,"markdown":content,"characters":len(content),
+                    "notice":"Offline preview, not written to the scanned workspace."}
+        return self._offline_query("guardian_offline_brief",create)
+
     def support_log(self) -> dict:
         p=support_bundle(self.root)
         self.metrics.log("support_bundle",success=True)

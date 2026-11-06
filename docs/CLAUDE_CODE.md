@@ -6,17 +6,17 @@
 2. Clone or extract Engineering Guardian **beside** your application folder:
 
 ```text
-/Volumes/ExternalSSD/development/HTH/
+/path/to/workspace/
 ├── Engineering-Guardian/
-└── airvoice-wireless-app/
+└── sample-app/
 ```
 
 3. In a Terminal:
 
 ```bash
-cd '/Volumes/ExternalSSD/development/HTH/Engineering-Guardian'
+cd '/path/to/workspace/Engineering-Guardian'
 python3 -m unittest discover -s tests -q
-bash scripts/connect_claude.sh '/Volumes/ExternalSSD/development/HTH/airvoice-wireless-app'
+bash scripts/connect_claude.sh '/path/to/workspace/sample-app'
 ```
 
 The script displays the target workspace and permissions and **asks for confirmation** before registering a project-local MCP server. It does not modify the target source. If a previous `engineering-guardian` MCP registration exists, remove/reconfigure it using `claude mcp remove` as appropriate before retrying.
@@ -28,13 +28,13 @@ The script displays the target workspace and permissions and **asks for confirma
 Use **Windows Python and Windows paths**, not a WSL Python environment. Run in a PowerShell window:
 
 ```powershell
-cd 'D:\\Dev\\Engineering-Guardian'
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'D:\\Dev\\airvoice-wireless-app'
-cd 'D:\\Dev\\airvoice-wireless-app'
+cd 'C:\\Projects\\Engineering-Guardian'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'C:\\Projects\\sample-app'
+cd 'C:\\Projects\\sample-app'
 claude
 ```
 
-The installer checks Python 3.11+ and Claude Code, creates the isolated `.venv\\Scripts\\python.exe` if needed, previews permissions, and requires confirmation. It registers an MCP server in **local project scope**, not globally. Source is not modified. To use an alternate data directory, set `$env:GUARDIAN_HOME = 'D:\\GuardianData'` in the shell **before launching Claude Code**.
+The installer checks Python 3.11+ and Claude Code, creates the isolated `.venv\\Scripts\\python.exe` if needed, previews permissions, and requires confirmation. It registers an MCP server in **local project scope**, not globally. Source is not modified. To use an alternate data directory, set `$env:GUARDIAN_HOME = 'C:\\GuardianData'` in the shell **before launching Claude Code**.
 
 WSL2: use the Bash installer inside WSL with Linux Python and `/mnt/d/...` paths. Do not mix Windows `.venv` with WSL `.venv`; separate checkouts are recommended. See [Windows guide](WINDOWS_SETUP_VI.md).
 
@@ -42,7 +42,7 @@ WSL2: use the Bash installer inside WSL with Linux Python and `/mnt/d/...` paths
 
 **Architecture:** “Use `guardian_scan` if needed, then `guardian_overview` and `guardian_find_symbol` to map the eSIM entry points. Only read source snippets relevant to the call path. Mark unverified edges explicitly.”
 
-**Callers:** “Use `guardian_find_symbol` for `downloadProfile`, then `guardian_get_callers` using the returned `symbol_id`. Verify important candidates against source before recommending a change.”
+**Callers:** “Use `guardian_find_symbol` for `processOrder`, then `guardian_get_callers` using the returned `symbol_id`. Verify important candidates against source before recommending a change.”
 
 **Debugging:** “Check `guardian_index_status`, refresh stale index, then request `guardian_get_context` for the failing symbol. Include source evidence and coverage gaps in your answer.”
 
@@ -60,3 +60,7 @@ WSL2: use the Bash installer inside WSL with Linux Python and `/mnt/d/...` paths
 - The current graph is heuristic, particularly for Dart/Kotlin/TypeScript: do not trust `CALLS` alone to assess change safety.
 - Project file watchers are not implemented: run `guardian_scan` again after edits.
 - MCP does not write README/diagrams; those remain manual AI tasks until documentation generation is implemented.
+
+## AI-optional / other agents
+
+Guardian hoạt động độc lập bằng CLI, không yêu cầu Claude. Các tool `guardian_tree`, `guardian_outline`, `guardian_hotspots`, `guardian_repo_map`, `guardian_snapshot_diff`, `guardian_offline_brief` có thể dùng từ client MCP STDIO tương thích. Việc cấu hình cụ thể Codex hoặc extension khác chưa được chứng nhận end-to-end. Xem [Multi-agent](MULTI_AGENT.md).

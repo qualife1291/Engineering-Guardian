@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-guardian-ucg-poc"
-version = "0.3.1"
-description = "Local-first versioned Unified Code Graph, cross-platform Claude Code MCP and safe diagnostic logs"
+version = "0.4.0"
+description = "Offline codebase navigation, versioned UCG, optional MCP for AI agents, local diagnostics"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}

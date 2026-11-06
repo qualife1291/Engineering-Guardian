@@ -34,7 +34,7 @@ jobs:
           pkg = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
           assert pkg['project']['version'] == __version__
           assert f'## [{__version__}]' in pathlib.Path('CHANGELOG.md').read_text()
-          for name in ('AGENTS.md','CLAUDE.md','SECURITY.md','CONTRIBUTING.md','docs/CLAUDE_CODE.md','docs/DIAGNOSTICS.md'):
+          for name in ('AGENTS.md','CLAUDE.md','SECURITY.md','CONTRIBUTING.md','docs/CLAUDE_CODE.md','docs/DIAGNOSTICS.md','docs/OFFLINE_INTELLIGENCE.md','docs/MULTI_AGENT.md','docs/PRIVACY.md'):
               assert pathlib.Path(name).is_file(), name
           print('Version and docs OK')
           PY
@@ -97,3 +97,5 @@ jobs:
           python -c "import pathlib, tomllib, ucg; assert tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'] == ucg.__version__"
           python -m ucg.cli --root ./tests scan
           if ($LASTEXITCODE -ne 0) { throw 'Windows CLI smoke failed.' }
+
+# Privacy and offline features are exercised through unittest discovery on both runners.

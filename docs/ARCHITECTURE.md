@@ -12,6 +12,7 @@ This repository currently contains a dependency-free Python prototype to validat
 - `service.py`: shared read-only-source service with mandatory freshness checks.
 - `mcp.py`: Claude Code STDIO MCP server fixed to one authorized local workspace.
 - `context.py`: bounded context packs that reject stale source bytes.
+- `offline.py`: deterministic tree, outline, hotspots, ranked repo map, no-Git snapshot diff and Markdown brief. Uses PageRank-like ranking and a diversity-first greedy selection.
 - `diagnostics.py`: anonymized JSONL timings and sanitized support ZIPs (no source code or prompts).
 - `engine.py`: reuse unchanged snapshots and file-level parse results; commit graph atomically.
 
@@ -22,3 +23,7 @@ Replace the prototype core with Rust, Rayon, Tree-sitter and BLAKE3. Import SCIP
 ## Trust model
 
 Structural matches are not automatically semantic truth. Every edge records a resolution level. Regex-based call candidates are `ast_candidate`/heuristic and must not be shown as exact calls. Unsupported or dynamic relationships remain unresolved.
+
+## Offline-first user-facing operations
+
+The CLI and MCP both call `GuardianService`. All offline navigation queries require a fresh snapshot, access only the configured root, and bound their outputs. The new `repo-map` is a **heuristic navigation aid**; it must not be interpreted as proof of exact call/contract dependencies. See [Offline Intelligence](OFFLINE_INTELLIGENCE.md) and [Multi-agent](MULTI_AGENT.md).

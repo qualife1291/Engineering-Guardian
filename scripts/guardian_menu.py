@@ -264,6 +264,56 @@ def run_tests() -> None:
     print("\nSELF-CHECK: PASS" if result.returncode == 0 else "\nSELF-CHECK: FAILED")
 
 
+
+def offline_menu_action(workspace: dict, choice: str) -> None:
+    """Navigate the index without calling an AI model or modifying app source."""
+    service = GuardianService(workspace["root"], workspace["db"])
+    try:
+        if choice == "12":
+            value = service.tree(depth=4, limit=200)
+            for entry in value["entries"]:
+                marker = "/" if entry["kind"] == "directory" else ""
+                print("  " * entry["depth"] + entry["path"].split("/")[-1] + marker)
+            if value["truncated"]:
+                print("... limited output; use CLI tree --limit for more.")
+        elif choice == "13":
+            relative = input("Đường dẫn file trong project (ví dụ src/main.py): ").strip()
+            value = service.outline(relative)
+            print(f"\n{value['file_path']} ({value['lines']} lines)")
+            for symbol in value["symbols"]:
+                print(f"  {symbol['line']}-{symbol['end_line']}: {symbol['kind']} {symbol['name']}")
+            if value["truncated"]:
+                print("... more symbols; use CLI outline --limit.")
+        elif choice == "14":
+            value = service.hotspots(min_lines=300, min_function_lines=80, limit=30)
+            print("\nFILES TO INSPECT (size/structure signals, NOT defects):")
+            for item in value["items"]:
+                print(f"  {item['lines']} lines | {item['file_path']} | {', '.join(item['signals'])}")
+        elif choice == "15":
+            focus = input("Từ khóa/mục tiêu (Enter: tổng quan): ").strip()
+            value = service.repo_map(focus=focus, max_chars=6000, limit=80)
+            print("\n" + value["text"])
+            if value["truncated"]:
+                print("... map truncated to keep it short.")
+        elif choice == "16":
+            value = service.diff()
+            print("\nSNAPSHOT DIFF (file changes are exact; symbol changes are structural):")
+            print(json.dumps(value, ensure_ascii=False, indent=2))
+        elif choice == "17":
+            focus = input("Chủ đề cần tóm tắt (Enter: toàn dự án): ").strip()
+            value = service.brief(focus=focus, max_chars=6000)
+            target_dir = data_home() / "reports"
+            target_dir.mkdir(parents=True, exist_ok=True)
+            filename = "offline-brief-" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".md"
+            target = target_dir / filename
+            target.write_text(value["markdown"], encoding="utf-8")
+            print("\nĐã lưu báo cáo local:", target)
+            print("Không dùng AI và không sửa source project.")
+    except Exception as exc:
+        # Never print exception text: it may embed confidential paths.
+        print("\nKhông thực hiện được:", type(exc).__name__)
+        print("Kiểm tra index bằng menu 3 hoặc quét lại bằng menu 2.")
+
 def main() -> None:
     registry = load_registry()
     while True:
@@ -283,6 +333,12 @@ def main() -> None:
         print("  9. Tự kiểm tra (self-check)")
         print(" 10. Xem thống kê tốc độ/chất lượng (log summary)")
         print(" 11. Xuất ZIP chẩn đoán để gửi nâng cấp")
+        print(" 12. Xem cây folder source (offline)")
+        print(" 13. Xem outline file dài (offline)")
+        print(" 14. Tìm file/function cần review (offline)")
+        print(" 15. Repo map: đọc code đúng trọng tâm (offline)")
+        print(" 16. Xem thay đổi giữa 2 lần quét (không cần Git)")
+        print(" 17. Xuất Markdown Codebase Brief (không cần AI)")
         print("  0. Thoát")
         choice = input("\nChọn chức năng: ").strip()
         if choice == "0":
@@ -315,6 +371,8 @@ def main() -> None:
             trace_symbols(current, "forward")
         elif choice == "7":
             create_context(current)
+        elif choice in {"12","13","14","15","16","17"}:
+            offline_menu_action(current, choice)
         elif choice == "10":
             report = diagnostic_summary(current["root"])
             print("\nTHỐNG KÊ CHẤT LƯỢNG/VẬN HÀNH (không phải semantic accuracy)")

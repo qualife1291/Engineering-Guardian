@@ -1,7 +1,7 @@
 {
   "benchmark": "100-file / 100k-line source understanding preparation benchmark",
   "dataset": {
-    "root": "/mnt/data/engineering-guardian/.benchmark/valid-100",
+    "root": "fixtures/valid-100",
     "source_files": 100,
     "source_lines": 100000,
     "languages": {
