@@ -2,6 +2,7 @@
 from __future__ import annotations
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from ucg.engine import scan_workspace
 from ucg.models import EdgeRecord, FileRecord, SymbolRecord
@@ -49,6 +50,21 @@ class WorkspaceScaleSafetyTests(unittest.TestCase):
             self.assertEqual([x.path for x in records],["real.py"])
             self.assertIn({"path":"alias.py","reason":"symlink"},skipped)
             self.assertNotIn("loop/real.py",[x.path for x in records])
+
+    def test_concurrent_identical_scans_commit_one_complete_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)/"shared"; root.mkdir()
+            for i in range(30):
+                (root/f"module_{i}.py").write_text(
+                    f"def function_{i}(): return {i}\n",encoding="utf-8")
+            db=Path(tmp)/"guardian"/"shared.sqlite"
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                results=list(pool.map(lambda _:scan_workspace(str(root),str(db)),range(2)))
+            self.assertEqual(results[0]["snapshot_id"],results[1]["snapshot_id"])
+            store=UCGStore(db)
+            self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0],1)
+            self.assertEqual(store.overview(results[0]["snapshot_id"])["files"],30)
+            store.close()
 
     def test_graph_traversal_is_bounded_and_cycle_safe(self):
         with tempfile.TemporaryDirectory() as tmp:

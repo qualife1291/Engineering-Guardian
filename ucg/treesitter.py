@@ -12,6 +12,7 @@ import posixpath
 import re
 from functools import lru_cache
 from dataclasses import dataclass
+from threading import local
 from pathlib import Path, PurePosixPath
 
 from .models import (
@@ -194,7 +195,7 @@ def install_parsers(languages: list[str]) -> dict:
     count = download([PARSER_NAMES[x] for x in selected])
     parser_available.cache_clear()
     parser_registry.cache_clear()
-    _get_parser.cache_clear()
+    _parser_state.parsers.clear()
     return {"requested_languages": selected, "available_count": count,
             "status": parser_status(selected),
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}
@@ -455,10 +456,19 @@ def _imports_for_node(path: str, language: str, node, source: bytes) -> list[Imp
     return out
 
 
-@lru_cache(maxsize=16)
+_parser_state = local()
+
+
 def _get_parser(language: str):
-    from tree_sitter_language_pack import get_parser
-    return get_parser(_parser_name(language))
+    # Tree-sitter Parser instances are not shared across concurrent scan threads.
+    parsers = getattr(_parser_state, "parsers", None)
+    if parsers is None:
+        parsers = {}
+        _parser_state.parsers = parsers
+    if language not in parsers:
+        from tree_sitter_language_pack import get_parser
+        parsers[language] = get_parser(_parser_name(language))
+    return parsers[language]
 
 
 def parser_fingerprint(language: str) -> str:

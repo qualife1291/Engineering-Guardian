@@ -148,9 +148,11 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
             if fingerprint(data) != record.fingerprint:
                 raise SourceChangedDuringScan("Source file modified during scan; retry")
             text = data.decode("utf-8", errors="replace")
+            tree_sitter_failed = False
             try:
                 bundle = parse_tree_sitter(record.path, record.language, text)
             except Exception as exc:
+                tree_sitter_failed = True
                 diagnostics.append({"type":"tree_sitter_runtime_fallback","language":record.language,
                                     "error_type":type(exc).__name__})
                 bundle = None
@@ -173,10 +175,7 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
                     if symbol.kind in {"function", "method"}:
                         call_sites.extend(call_sites_for_symbol(symbol, lines))
                 backend = _fallback_backend(record.language)
-                parse_status = "fallback_after_tree_sitter_error" if any(
-                    d.get("type") == "tree_sitter_runtime_fallback" and d.get("language") == record.language
-                    for d in diagnostics[-1:]
-                ) else "heuristic"
+                parse_status = "fallback_after_tree_sitter_error" if tree_sitter_failed else "heuristic"
                 parser_version = parser_fingerprint(record.language)
                 if parse_status == "fallback_after_tree_sitter_error":
                     parser_version += ":failed"
