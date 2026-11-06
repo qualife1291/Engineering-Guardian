@@ -461,8 +461,8 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
         tree = parser.parse(source)
         if tree is None:
             return None
-    except Exception:
-        return None
+    except Exception as exc:
+        raise RuntimeError(f"Tree-sitter parser failed for {language}: {type(exc).__name__}") from exc
 
     symbols: list[SymbolRecord] = []
     imports: list[ImportRecord] = []
@@ -473,8 +473,10 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
     call_types = CALL_TYPES.get(language, set())
     import_types = IMPORT_TYPES.get(language, set())
 
-    def visit(node, scopes: list[tuple[str, str]], owner_id: str, type_scope: str):
-        nonlocal error_count
+    # Iterative traversal avoids Python recursion limits on deeply nested generated code.
+    stack = [(tree.root_node, [], "", "")]
+    while stack:
+        node, scopes, owner_id, type_scope = stack.pop()
         if node.is_error or node.is_missing:
             error_count += 1
         scope_names = [x[0] for x in scopes]
@@ -485,21 +487,22 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
         next_type_scope = type_scope
         if declaration:
             kind, name = declaration
-            start = _start_row(node) + 1
-            end = max(start, _end_row(node) + 1)
+            start_line = _start_row(node) + 1
+            end_line = max(start_line, _end_row(node) + 1)
             qname = ".".join(scope_names + [name])
             body = _body_node(node)
             if _kind(node) == "variable_declarator":
                 value = _field(node, "value")
                 body = _body_node(value) if value is not None else body
             signature = _signature(node, body, source)
-            symbol_id = f"{path}:{qname}:{start}"
-            symbols.append(SymbolRecord(symbol_id, name, qname, kind, path, language, start, end, signature))
+            symbol_id = f"{path}:{qname}:{start_line}"
+            symbols.append(SymbolRecord(symbol_id, name, qname, kind, path, language,
+                                        start_line, end_line, signature))
             declaration_bytes = source[_start_byte(node):_end_byte(node)]
             body_bytes = source[_start_byte(body):_end_byte(body)] if body is not None else declaration_bytes
-            signature_bytes = signature.encode("utf-8")
             metadata.append(SymbolAnalysisRecord(
-                symbol_id, type_scope, _hash(signature_bytes), _hash(body_bytes), _hash(declaration_bytes)))
+                symbol_id, type_scope, _hash(signature.encode("utf-8")),
+                _hash(body_bytes), _hash(declaration_bytes)))
             next_scopes = scopes + [(name, kind)]
             if kind in CALLABLES:
                 next_owner = symbol_id
@@ -513,10 +516,10 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
                 references.append(ReferenceRecord(
                     owner_id, target, receiver, _kind(node), path,
                     _start_row(node) + 1, _start_byte(node), _end_byte(node)))
-        for child in _children(node):
-            visit(child, next_scopes, next_owner, next_type_scope)
+        children = _children(node)
+        for child in reversed(children):
+            stack.append((child, next_scopes, next_owner, next_type_scope))
 
-    visit(tree.root_node, [], "", "")
     status = "partial" if error_count else "ok"
     return ParseBundle(
         symbols, imports, references,

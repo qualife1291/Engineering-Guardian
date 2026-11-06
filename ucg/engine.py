@@ -9,7 +9,7 @@ from pathlib import Path
 from . import __version__
 from .models import EdgeRecord, FileAnalysisRecord, SymbolAnalysisRecord
 from .parser import parse_file
-from .scanner import fingerprint, scan_files
+from .scanner import MAX_FILE_BYTES, fingerprint, scan_files
 from .store import UCGStore
 from .treesitter import parse_tree_sitter, parser_available, resolve_references
 
@@ -129,13 +129,21 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
             if path.is_symlink() or not path.resolve().is_relative_to(root_path):
                 raise SourceChangedDuringScan("Workspace file became a symlink during scan")
             try:
-                data = path.read_bytes()
+                with path.open("rb") as source_file:
+                    data = source_file.read(MAX_FILE_BYTES + 1)
+                if len(data) > MAX_FILE_BYTES:
+                    raise SourceChangedDuringScan("Source file grew beyond the configured scan size limit")
             except OSError as exc:
                 raise SourceChangedDuringScan("Source file became unreadable during scan") from exc
             if fingerprint(data) != record.fingerprint:
                 raise SourceChangedDuringScan("Source file modified during scan; retry")
             text = data.decode("utf-8", errors="replace")
-            bundle = parse_tree_sitter(record.path, record.language, text)
+            try:
+                bundle = parse_tree_sitter(record.path, record.language, text)
+            except Exception as exc:
+                diagnostics.append({"type":"tree_sitter_runtime_fallback","language":record.language,
+                                    "error_type":type(exc).__name__})
+                bundle = None
             if bundle is not None:
                 all_symbols.extend(bundle.symbols)
                 imports.extend(bundle.imports)

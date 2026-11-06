@@ -5,6 +5,8 @@ from pathlib import Path
 from .languages import detect_language
 from .models import FileRecord
 
+MAX_FILE_BYTES = 5_000_000
+
 DEFAULT_EXCLUDES = {
     ".git", "node_modules", ".venv", "venv", "dist", "build", "target",
     ".dart_tool", ".gradle", "Pods", "vendor", "__pycache__", ".cache",
@@ -19,7 +21,7 @@ def fingerprint(data: bytes) -> str:
     return hashlib.blake2b(data, digest_size=20).hexdigest()
 
 
-def scan_files(root: str | Path, extra_excludes: set[str] | None = None, max_file_bytes: int = 5_000_000):
+def scan_files(root: str | Path, extra_excludes: set[str] | None = None, max_file_bytes: int = MAX_FILE_BYTES):
     root = Path(root).expanduser().resolve(strict=True)
     excludes = DEFAULT_EXCLUDES | (extra_excludes or set())
     records: list[FileRecord] = []
