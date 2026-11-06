@@ -122,3 +122,7 @@ Không đặt `GUARDIAN_HOME` bên trong folder source đang quét.
 ## 9. Bảo mật & giới hạn
 
 Guardian **không chạy source ứng dụng**, không cấp tool sửa file hoặc chạy shell trong MCP. Nó **có thể gửi các đoạn source được yêu cầu tới mô hình Claude**, nên hãy tuân thủ chính sách dữ liệu của tổ chức. Claude Code có quyền riêng cho các công cụ khác; cấu hình Guardian không giới hạn các quyền đó. Chi tiết tại [SECURITY.md](../SECURITY.md).
+
+## 10. Dùng hoàn toàn offline (không cần Claude Code)
+
+Sau khi chạy `Start Engineering Guardian.cmd` và quét lần đầu, menu `12–17` cho phép xem cây folder, outline file dài, hotspots, repo map, so sánh snapshot và xuất báo cáo Markdown. Không cần đăng ký MCP hoặc tài khoản AI. Xem [Offline Intelligence](OFFLINE_INTELLIGENCE.md) và [Multi-agent](MULTI_AGENT.md).

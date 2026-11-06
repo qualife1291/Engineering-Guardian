@@ -2,7 +2,7 @@
 
 ## What exists today
 
-POC v0.3.1, **no production Rust/Tree-sitter/SCIP**. External source is read-only; `guardian scan` creates content-addressed snapshots; unchanged files are reused. CLI and Claude Code MCP call the same service; on-disk content is checked before source context is served.
+POC v0.4.0, **no production Rust/Tree-sitter/SCIP**. External source is read-only; `guardian scan` creates content-addressed snapshots; unchanged files are reused. CLI and Claude Code MCP call the same service; on-disk content is checked before source context is served.
 
 ```text
 scripts/connect_claude.sh / connect_claude.ps1 --> ucg/mcp.py --> ucg/service.py
@@ -18,6 +18,7 @@ ucg/scanner.py --> ucg/parser.py --> ucg/engine.py --> ucg/store.py (SQLite)
 | Need | Open only this file |
 |---|---|
 | Windows installers/launchers | `scripts/windows_common.ps1`, `scripts/start_windows.ps1`, `scripts/connect_claude.ps1`, `Start Engineering Guardian.cmd` |
+| Offline tree/outline/map/hotspots/diff | `ucg/offline.py`, `ucg/service.py`, `ucg/cli.py`, `ucg/mcp.py` |
 | Add CLI command | `ucg/cli.py` |
 | Add MCP tool | `ucg/mcp.py`, `ucg/service.py` |
 | Change scan/cache | `ucg/scanner.py`, `ucg/engine.py` |

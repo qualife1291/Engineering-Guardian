@@ -104,3 +104,7 @@ Mở Claude Code trong folder dự án → `/mcp` → kiểm tra `engineering-gu
 - Hoặc chạy `python3 -m ucg.cli --root PROJECT support-bundle`.
 - Log không chứa code/path/prompt theo thiết kế; **xem lại ZIP trước khi gửi**.
 - Chi tiết: [`DIAGNOSTICS.md`](DIAGNOSTICS.md).
+
+## Offline-first (không cần AI)
+
+Menu `12–17` cho phép xem file tree, outline function, hotspot, repo map, diff giữa các lần scan và tạo Markdown Brief, không cần LLM hoặc kết nối mạng. Xem [Offline Intelligence](OFFLINE_INTELLIGENCE.md).

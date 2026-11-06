@@ -126,13 +126,13 @@ def support_bundle(root: str | Path, output: str | Path | None=None) -> Path:
                     if row.get("workspace_hash") != wid or row.get("event") not in SAFE_EVENTS:
                         continue
                     fields={k:v for k,v in row.items() if k in SAFE_FIELDS and isinstance(v,(int,float,bool,str))}
-                    cleaned.append({"schema_version":LOG_FORMAT,"event":row["event"],"workspace_hash":wid,
+                    cleaned.append({"schema_version":LOG_FORMAT,"event":row["event"],"workspace_hash":"redacted",
                                     "timestamp":str(row.get("timestamp", ""))[:40],**fields})
                 if cleaned:
                     selected.append((f"logs/{file.parent.name}/{file.name}",cleaned))
             except (OSError,ValueError,TypeError,json.JSONDecodeError):
                 continue
-    metadata={"schema_version":LOG_FORMAT,"generated_at_utc":now.isoformat(),"workspace_hash":wid,
+    metadata={"schema_version":LOG_FORMAT,"generated_at_utc":now.isoformat(),"workspace_hash":"redacted",
               "python_version":".".join(map(str,sys.version_info[:3])),
               "os":platform.system(),"architecture":platform.machine(),
               "log_files":len(selected),"privacy":"No source, prompts, file paths, tokens, or database files"}

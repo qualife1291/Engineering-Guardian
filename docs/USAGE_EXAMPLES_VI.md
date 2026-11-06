@@ -60,3 +60,16 @@ python3 -m ucg.cli --root '/path/to/project' support-bundle
 ```
 
 Gửi ZIP support đã xem xét cùng mô tả lỗi/hoạt động mong muốn. **Đừng gửi SQLite index hoặc source project nhạy cảm.**
+
+## 8) Không có AI, chỉ cần Terminal
+
+```bash
+python3 -m ucg.cli --root '/path/to/sample-app' tree --depth 4
+python3 -m ucg.cli --root '/path/to/sample-app' outline src/example.py
+python3 -m ucg.cli --root '/path/to/sample-app' hotspots --min-lines 300
+python3 -m ucg.cli --root '/path/to/sample-app' repo-map --focus processOrder --text
+python3 -m ucg.cli --root '/path/to/sample-app' brief --format markdown > codebase-brief.md
+python3 -m ucg.cli --root '/path/to/sample-app' diff
+```
+
+Không cần Git, API key hay model. `diff` chỉ so sánh các snapshot đã scan và không chứng minh tương đương logic. Xem [OFFLINE_INTELLIGENCE.md](OFFLINE_INTELLIGENCE.md).

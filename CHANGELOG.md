@@ -9,6 +9,26 @@ All notable **released** changes to Engineering Guardian are recorded here, foll
 - Cross-language MethodChannel, HTTP, SQL and event contract resolution.
 - Change X-Ray UI, source-linked diagrams and CI benchmark regression gates.
 
+## [0.4.0] - 2026-11-06
+
+### Added
+- Zero-AI commands for compact indexed folder tree, single-file outlines, structural maintenance hotspots and ranked repository maps.
+- Local source snapshot comparison without Git, and deterministic offline Markdown brief.
+- File-level PageRank-style navigation ranking, lexical relevance, and diversity-aware context selection with hard output budgets.
+- Shared MCP tools for multiple AI clients; Guardian remains independently usable through CLI.
+- Platform-neutral public documentation, privacy review checklist, automated sensitive-example regression checks.
+
+### Changed
+- All usage examples now use neutral project names, relative roots and illustrative paths.
+- Sanitize historical benchmark fixture paths before publishing reports.
+- Clarify that scanner currently uses BLAKE2b, syntax heuristics outside Python, and cannot prove runtime/semantic correctness.
+- Support bundles redact their workspace identifier to reduce linkability when shared.
+
+### Limitations
+- The POC still has no production Tree-sitter/SCIP or verified cross-language call graph.
+- Existing Git history may retain previous public content; editing the current branch cannot erase GitHub commit history.
+- Concurrent scans are not coordinated between multiple agent processes.
+
 ## [0.3.1] - 2026-11-06
 
 ### Added

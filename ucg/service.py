@@ -121,6 +121,64 @@ class GuardianService:
                          truncated=result["truncated"],duration_ms=round(1000*(time.perf_counter()-started),3))
         return result
 
+
+    # No-LLM navigation: one authorized root, fresh snapshots, bounded responses.
+    def tree(self, depth: int = 5, limit: int = 200) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            return offline.tree(store,self._guard_latest(store),depth,limit)
+        finally:
+            store.close()
+
+    def outline(self, path: str, limit: int = 120) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            return offline.outline(store,self._guard_latest(store),path,limit)
+        finally:
+            store.close()
+
+    def hotspots(self, min_lines: int = 300, min_function_lines: int = 80, limit: int = 30) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            return offline.hotspots(store,self._guard_latest(store),min_lines,min_function_lines,limit)
+        finally:
+            store.close()
+
+    def repo_map(self, focus: str = "", max_chars: int = 6000, limit: int = 80) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            return offline.repo_map(store,self._guard_latest(store),focus,max_chars,limit)
+        finally:
+            store.close()
+
+    def diff(self, base: str | None = None, head: str | None = None, limit: int = 100) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            self._guard_latest(store)
+            return offline.diff(store,str(self.root),base,head,limit)
+        finally:
+            store.close()
+
+    def brief(self, focus: str = "", max_chars: int = 6000) -> dict:
+        from . import offline
+        store=UCGStore(self.db)
+        try:
+            snapshot=self._guard_latest(store)
+            overview={"snapshot_id":snapshot,**store.overview(snapshot)}
+            tree_result=offline.tree(store,snapshot,3,300)
+            hot=offline.hotspots(store,snapshot,300,80,10)
+            mapping=offline.repo_map(store,snapshot,focus,max_chars,60)
+            content=offline.brief(overview,tree_result,hot,mapping)
+            return {"snapshot_id":snapshot,"markdown":content,"characters":len(content),
+                    "notice":"Offline preview, not written to the scanned workspace."}
+        finally:
+            store.close()
+
     def support_log(self) -> dict:
         p=support_bundle(self.root)
         self.metrics.log("support_bundle",success=True)

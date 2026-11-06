@@ -60,3 +60,7 @@ WSL2: use the Bash installer inside WSL with Linux Python and `/mnt/d/...` paths
 - The current graph is heuristic, particularly for Dart/Kotlin/TypeScript: do not trust `CALLS` alone to assess change safety.
 - Project file watchers are not implemented: run `guardian_scan` again after edits.
 - MCP does not write README/diagrams; those remain manual AI tasks until documentation generation is implemented.
+
+## AI-optional / other agents
+
+Guardian hoạt động độc lập bằng CLI, không yêu cầu Claude. Các tool `guardian_tree`, `guardian_outline`, `guardian_hotspots`, `guardian_repo_map`, `guardian_snapshot_diff`, `guardian_offline_brief` có thể dùng từ client MCP STDIO tương thích. Việc cấu hình cụ thể Codex hoặc extension khác chưa được chứng nhận end-to-end. Xem [Multi-agent](MULTI_AGENT.md).

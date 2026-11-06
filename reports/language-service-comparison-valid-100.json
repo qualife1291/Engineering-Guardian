@@ -16,7 +16,7 @@
     "jedi": {
       "tool": "Jedi",
       "version": "0.20.0",
-      "project_root": "/mnt/data/engineering-guardian/.benchmark/valid-100",
+      "project_root": "fixtures/valid-100",
       "symbol": "normalize_python_075_10",
       "cold_first_query_ms": 691.57354999993,
       "warm_query_median_ms": 13.296366999952625,
@@ -25,32 +25,32 @@
       "reference_count_including_definition": 6,
       "references": [
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 140,
           "column": 4
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 231,
           "column": 17
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 321,
           "column": 17
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 411,
           "column": 17
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 501,
           "column": 17
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "file": "fixtures/valid-100/domain_02/layer_01/module_07/python_075.py",
           "line": 591,
           "column": 17
         }
@@ -100,42 +100,42 @@
       "reference_count_including_definition": 8,
       "references": [
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 77,
           "isDefinition": true
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 134,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 194,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 254,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 314,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 374,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 434,
           "isDefinition": false
         },
         {
-          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "file": "fixtures/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
           "line": 494,
           "isDefinition": false
         }

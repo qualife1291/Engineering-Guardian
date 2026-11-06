@@ -6,6 +6,25 @@
 
 [Changelog](CHANGELOG.md) · [Tiếng Việt: bắt đầu nhanh](docs/EASY_START_VI.md) · [Claude Code MCP](docs/CLAUDE_CODE.md) · [Ví dụ sử dụng](docs/USAGE_EXAMPLES_VI.md) · [Đọc nhanh cho AI](AGENTS.md)
 
+## No AI? Use Engineering Guardian entirely from your terminal
+
+Guardian is **offline-first**. All of these features work with Python and SQLite, even when your AI subscription hits a request/token limit, or you do not use any AI agent:
+
+~~~bash
+python3 -m ucg.cli --root /path/to/project scan
+python3 -m ucg.cli --root /path/to/project tree --depth 4
+python3 -m ucg.cli --root /path/to/project hotspots --min-lines 300
+python3 -m ucg.cli --root /path/to/project outline src/example.py
+python3 -m ucg.cli --root /path/to/project repo-map --focus processOrder --max-chars 4000 --text
+python3 -m ucg.cli --root /path/to/project brief --format markdown > codebase-brief.md
+# After modifying the project, run scan again, then:
+python3 -m ucg.cli --root /path/to/project diff
+~~~
+
+**Large source files** can be navigated via function outlines rather than read in full. PageRank-style file ranking and a diversity-first symbol map prioritize what to inspect. The exact content hash diff works without Git; symbol/logic change detection is still heuristic. See [offline algorithms and limitations](docs/OFFLINE_INTELLIGENCE.md).
+
+**AI integrations are optional:** Claude Code has the tested project-scoped MCP workflow; other stdio MCP-capable clients can use the same server (see [Multi-agent guide](docs/MULTI_AGENT.md)). No cloud endpoint or user source is automatically uploaded by Guardian.
+
 ## Quick start by operating system
 
 | System | One-click menu | Claude Code MCP guide |
@@ -122,3 +141,7 @@ Run `python3 -m ucg.cli --root PROJECT support-bundle` (or Claude's `guardian_su
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Public repository privacy
+
+All published usage examples must be generic. See [privacy and history policy](docs/PRIVACY.md). Runtime logs are separate from version history; see [CHANGELOG](CHANGELOG.md) and [diagnostics](docs/DIAGNOSTICS.md).
