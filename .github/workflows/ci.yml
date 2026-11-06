@@ -57,6 +57,10 @@ jobs:
           python-version: '3.11'
       - name: Compile Python
         run: python -m compileall -q ucg scripts benchmarks tests
+      - name: Install optional Tree-sitter engine and Python grammar
+        run: |
+          python -m pip install -e ".[treesitter]"
+          python -m ucg.cli --root . parsers install --languages python
       - name: Unit tests
         run: python -m unittest discover -s tests -v
       - name: Windows PowerShell parse and bootstrap
@@ -99,3 +103,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows CLI smoke failed.' }
 
 # Privacy and offline features are exercised through unittest discovery on both runners.
+
+  tree-sitter-integration:
+    name: Tree-sitter integration (Python 3.11, Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install optional Tree-sitter dependencies
+        run: python -m pip install -e ".[treesitter]"
+      - name: Explicitly install supported parser grammars
+        run: |
+          python -m ucg.cli --root . parsers install --languages python,typescript,javascript,dart,kotlin,java,sql,go,rust
+      - name: Run full suite with Tree-sitter enabled
+        run: python -m unittest discover -s tests -v
+      - name: Verify parser coverage and Change X-Ray CLI
+        run: |
+          python -m ucg.cli --root ./tests scan
+          python -m ucg.cli --root ./tests parsers status
+          python -m ucg.cli --root ./tests impact
