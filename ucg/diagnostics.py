@@ -25,7 +25,9 @@ SAFE_FIELDS = {
     "tool_name", "failure_type", "error_code", "scan_ms", "parse_ms", "graph_ms", "persist_ms",
 }
 SAFE_TOOLS = {"guardian_scan", "guardian_overview", "guardian_find_symbol", "guardian_get_callers",
-              "guardian_get_callees", "guardian_get_context", "guardian_index_status", "guardian_support_log"}
+              "guardian_get_callees", "guardian_get_context", "guardian_index_status", "guardian_support_log",
+              "guardian_tree", "guardian_outline", "guardian_hotspots", "guardian_repo_map",
+              "guardian_snapshot_diff", "guardian_offline_brief"}
 
 
 def data_home() -> Path:

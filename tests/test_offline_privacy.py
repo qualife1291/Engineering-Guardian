@@ -91,6 +91,23 @@ class OfflineTests(unittest.TestCase):
         req["params"]["arguments"]["file"]="../private.txt"
         self.assertTrue(mcp.dispatch(req)["result"]["isError"])
 
+    def test_multiple_local_clients_share_snapshot(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from ucg.diagnostics import diagnostic_summary, support_bundle
+        from zipfile import ZipFile
+        def lookup(_):
+            client=GuardianService(str(self.root))
+            return client.repo_map(focus="config",max_chars=2000)["snapshot_id"]
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            snapshot_ids=list(pool.map(lookup,range(8)))
+        self.assertEqual(len(set(snapshot_ids)),1)
+        metrics=diagnostic_summary(self.root)
+        self.assertGreaterEqual(metrics["timing"]["tool_ms"]["count"],8)
+        bundle=support_bundle(self.root)
+        with ZipFile(bundle) as zf:
+            env=json.loads(zf.read("environment.json").decode("utf-8"))
+        self.assertEqual(env["workspace_hash"],"redacted")
+
     def test_terminal_cli_json_and_markdown_modes(self):
         python=sys.executable
         base=[python,"-m","ucg.cli","--root",str(self.root)]
