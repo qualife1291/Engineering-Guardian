@@ -10,6 +10,7 @@ import hashlib
 import importlib.metadata
 import posixpath
 import re
+from functools import lru_cache
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
@@ -118,6 +119,7 @@ def _parser_name(language: str) -> str | None:
     return PARSER_NAMES.get(language)
 
 
+@lru_cache(maxsize=1)
 def parser_registry():
     try:
         from tree_sitter_language_pack import LanguageRegistry
@@ -126,6 +128,7 @@ def parser_registry():
         return None
 
 
+@lru_cache(maxsize=None)
 def parser_available(language: str) -> bool:
     name = _parser_name(language)
     if not name:
@@ -187,6 +190,8 @@ def install_parsers(languages: list[str]) -> dict:
     except ImportError as exc:
         raise RuntimeError("Install the optional extra: pip install 'engineering-guardian-ucg-poc[treesitter]'") from exc
     count = download([PARSER_NAMES[x] for x in selected])
+    parser_available.cache_clear()
+    parser_registry.cache_clear()
     return {"requested_languages": selected, "available_count": count,
             "status": parser_status(selected),
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}
@@ -447,16 +452,21 @@ def _imports_for_node(path: str, language: str, node, source: bytes) -> list[Imp
     return out
 
 
+@lru_cache(maxsize=16)
+def _get_parser(language: str):
+    from tree_sitter_language_pack import get_parser
+    return get_parser(_parser_name(language))
+
+
 def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None:
     parser_name = _parser_name(language)
     if not parser_name or not parser_available(language):
         return None
     try:
-        from tree_sitter_language_pack import get_parser
         registry = parser_registry()
         if registry is None or not registry.has_language(parser_name):
             return None
-        parser = get_parser(parser_name)
+        parser = _get_parser(language)
         source = text.encode("utf-8")
         tree = parser.parse(source)
         if tree is None:
@@ -593,6 +603,9 @@ def resolve_references(root: str | Path, symbols: list[SymbolRecord],
     for symbol in symbols:
         by_file.setdefault(symbol.file_path, {}).setdefault(symbol.name, []).append(symbol)
     meta_by_id = {m.symbol_id: m for m in symbol_analysis}
+    by_qualified: dict[tuple[str, str], list[SymbolRecord]] = {}
+    for symbol in symbols:
+        by_qualified.setdefault((symbol.file_path, symbol.qualified_name), []).append(symbol)
     aliases: dict[str, dict[str, ImportRecord]] = {}
     for item in imports:
         item.resolved_path = _resolve_import(root_path, item, known_files)
@@ -633,8 +646,8 @@ def resolve_references(root: str | Path, symbols: list[SymbolRecord],
             scope = source_meta.scope_name if source_meta else ""
             if scope:
                 qname = scope + "." + ref.target_name
-                candidates = [s for s in symbols if s.file_path == ref.evidence_path
-                              and s.qualified_name == qname and s.kind in CALLABLES]
+                candidates = [s for s in by_qualified.get((ref.evidence_path, qname), [])
+                              if s.kind in CALLABLES]
                 if len(candidates) == 1:
                     ref.target_id = candidates[0].symbol_id
                     ref.resolution = "tree_sitter_same_class"

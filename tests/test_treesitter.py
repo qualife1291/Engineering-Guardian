@@ -38,6 +38,12 @@ class TreeSitterPythonTests(unittest.TestCase):
         self.assertEqual(imports[0].resolved_path, "provider.py")
         self.assertEqual(b.file_analysis.parser_backend, "tree_sitter")
 
+    def test_deeply_nested_source_does_not_use_python_recursion(self):
+        source = "def deep():\n    return " + "(" * 1200 + "1" + ")" * 1200 + "\n"
+        parsed = parse_tree_sitter("deep.py", "python", source)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.symbols[0].name, "deep")
+
     def test_self_method_binding_and_ambiguous_same_file_stays_unresolved(self):
         source = (
             "class Service:\n"
@@ -85,6 +91,32 @@ class TreeSitterTypeScriptTests(unittest.TestCase):
         self.assertTrue(any(x.name == "caller" for x in b.symbols))
         self.assertEqual(b.references[0].resolution, "tree_sitter_import_binding")
         self.assertTrue(b.references[0].target_id.endswith("provider.ts:normalize:1"))
+
+
+@unittest.skipUnless(parser_available("python"), "Tree-sitter Python grammar is not installed")
+class TreeSitterPolyglotSmokeTests(unittest.TestCase):
+    def test_all_advertised_grammars_parse_a_minimal_valid_file(self):
+        examples = {
+            "python": "def normalize(value):\n    return value.strip()\n",
+            "typescript": "export function normalize(value: string): string { return value.trim(); }\n",
+            "javascript": "export function normalize(value) { return value.trim(); }\n",
+            "java": "package bench; public class Sample { public String normalize(String value) { return value.trim(); } }\n",
+            "kotlin": "class Sample { fun normalize(value: String): String = value.trim() }\n",
+            "dart": "class Sample { String normalize(String value) => value.trim(); }\n",
+            "go": "package bench\nfunc Normalize(value string) string { return value }\n",
+            "rust": "pub fn normalize(value: &str) -> String { value.to_string() }\n",
+            "sql": "CREATE TABLE sample (id INTEGER PRIMARY KEY, value TEXT);\n",
+            "protobuf": 'syntax = "proto3"; package bench; message Sample { string value = 1; }\n',
+        }
+        for language, source in examples.items():
+            with self.subTest(language=language):
+                if not parser_available(language):
+                    self.skipTest(f"{language} grammar not installed in this CI environment")
+                parsed = parse_tree_sitter(f"sample.{language}", language, source)
+                self.assertIsNotNone(parsed)
+                self.assertEqual(parsed.file_analysis.parser_backend, "tree_sitter")
+                self.assertEqual(parsed.file_analysis.parse_status, "ok",
+                                 f"{language} parse errors: {parsed.file_analysis.error_count}")
 
 
 @unittest.skipUnless(parser_available("python"), "Tree-sitter Python grammar is not installed")

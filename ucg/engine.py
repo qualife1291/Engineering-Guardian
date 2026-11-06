@@ -97,7 +97,8 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
         previous = store.latest_snapshot(str(root_path))
         old_hashes = store.get_file_fingerprints(previous) if previous else {}
         old_analysis = store.get_file_analysis_map(previous) if previous else {}
-        expected_backends = {record.path: _expected_backend(record.language) for record in records}
+        backend_by_language = {language: _expected_backend(language) for language in {r.language for r in records}}
+        expected_backends = {record.path: backend_by_language[record.language] for record in records}
         reusable_paths = [
             record.path for record in records
             if old_hashes.get(record.path) == record.fingerprint
