@@ -24,4 +24,6 @@ Report suspected vulnerabilities privately to the repository owner through GitHu
 | MCP server | Selected source root | Index and diagnostics outside it | No |
 | Support bundle | Sanitized logs | Support ZIP outside source | No |
 
+Windows launcher `Start Engineering Guardian.cmd` invokes a checked-in PowerShell script with process-local ExecutionPolicy Bypass; it does not change the user's permanent policy. Inspect the scripts before execution, and follow organization policy on managed devices. Registration requests confirmation unless explicitly given `-Yes`.
+
 GitHub Actions uses `contents: read` only. Never store credentials in this repository.

@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shlex
 import subprocess
 import sys
 from datetime import datetime
@@ -51,14 +50,18 @@ def workspace_id(path: Path) -> str:
 
 
 def parse_user_path(value: str) -> Path | None:
-    value = value.strip()
-    if not value:
+    """Accept Windows drive paths, quoted paths and macOS Finder drag-and-drop.
+
+    Avoid shlex.split() for Windows: it consumes backslashes in C:\\Users\\...
+    """
+    candidate = value.strip()
+    if not candidate:
         return None
-    try:
-        parts = shlex.split(value)
-        candidate = parts[0] if len(parts) == 1 else value.strip("'\"")
-    except ValueError:
-        candidate = value.strip("'\"")
+    if len(candidate) >= 2 and candidate[0] == candidate[-1] and candidate[0] in ("'", '"'):
+        candidate = candidate[1:-1]
+    if os.name != "nt":
+        # Finder may paste POSIX shell-escaped spaces into a Terminal prompt.
+        candidate = candidate.replace(r"\ ", " ")
     return Path(candidate).expanduser().resolve()
 
 

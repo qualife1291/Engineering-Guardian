@@ -1,4 +1,4 @@
-# Claude Code + Engineering Guardian (macOS / Linux)
+# Claude Code + Engineering Guardian (macOS / Linux / Windows)
 
 ## One-time setup
 
@@ -22,6 +22,21 @@ bash scripts/connect_claude.sh '/Volumes/ExternalSSD/development/HTH/airvoice-wi
 The script displays the target workspace and permissions and **asks for confirmation** before registering a project-local MCP server. It does not modify the target source. If a previous `engineering-guardian` MCP registration exists, remove/reconfigure it using `claude mcp remove` as appropriate before retrying.
 
 4. Start Claude Code in the target app directory, run `/mcp`, and verify `engineering-guardian` is connected.
+
+## Windows native PowerShell
+
+Use **Windows Python and Windows paths**, not a WSL Python environment. Run in a PowerShell window:
+
+```powershell
+cd 'D:\\Dev\\Engineering-Guardian'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'D:\\Dev\\airvoice-wireless-app'
+cd 'D:\\Dev\\airvoice-wireless-app'
+claude
+```
+
+The installer checks Python 3.11+ and Claude Code, creates the isolated `.venv\\Scripts\\python.exe` if needed, previews permissions, and requires confirmation. It registers an MCP server in **local project scope**, not globally. Source is not modified. To use an alternate data directory, set `$env:GUARDIAN_HOME = 'D:\\GuardianData'` in the shell **before launching Claude Code**.
+
+WSL2: use the Bash installer inside WSL with Linux Python and `/mnt/d/...` paths. Do not mix Windows `.venv` with WSL `.venv`; separate checkouts are recommended. See [Windows guide](WINDOWS_SETUP_VI.md).
 
 ## Suggested prompts
 

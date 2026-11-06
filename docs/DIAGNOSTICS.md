@@ -15,6 +15,8 @@ Each line is a self-contained JSON record with version, UTC timestamp, anonymize
 
 **Limitations:** counts and response times are operational quality indicators. They do not establish symbol precision, call-graph recall, correctness of reasoning, or safety of changes. For those, compare findings to manually labeled test fixtures.
 
+For Windows native, `$GUARDIAN_HOME` is a PowerShell environment variable (`$env:GUARDIAN_HOME = 'D:\\GuardianData'`) and defaults to `%USERPROFILE%\\.engineering-guardian`. WSL2 paths and Windows paths must not be mixed. See [Windows setup](WINDOWS_SETUP_VI.md).
+
 ## View metrics summary without sharing source
 
 ```bash
