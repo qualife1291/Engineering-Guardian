@@ -97,14 +97,14 @@ class OfflineTests(unittest.TestCase):
         for args in (["tree"],["outline","src/config.py"],["hotspots","--min-lines","50"],
                      ["repo-map","--focus","config"],["diff"],["brief"]):
             with self.subTest(command=args[0]):
-                cp=subprocess.run(base+args,cwd=REPO,capture_output=True,
+                cp=subprocess.run(base+args,cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                                   encoding="utf-8",text=True,timeout=20)
                 self.assertEqual(cp.returncode,0,cp.stderr)
-                self.assertIsInstance(json.loads(cp.stdout),dict)
+                self.assertIsInstance(json.loads(cp.stdout or ""),dict)
         cp=subprocess.run(base+["brief","--format","markdown"],cwd=REPO,
-                          capture_output=True,encoding="utf-8",text=True,timeout=20)
+                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",text=True,timeout=20)
         self.assertEqual(cp.returncode,0,cp.stderr)
-        self.assertTrue(cp.stdout.startswith("# Engineering Guardian"))
+        self.assertTrue((cp.stdout or "").startswith("# Engineering Guardian"))
 
 
 class PublicPrivacyTests(unittest.TestCase):
