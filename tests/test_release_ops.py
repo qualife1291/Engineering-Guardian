@@ -33,9 +33,9 @@ class ReleaseAndOperationsTests(unittest.TestCase):
 
     def test_release_files_are_present_and_version_consistent(self):
         import tomllib
-        project = tomllib.loads((PROJECT / "pyproject.toml").read_text())
+        project = tomllib.loads((PROJECT / "pyproject.toml").read_text(encoding="utf-8"))
         self.assertEqual(project["project"]["version"], __version__)
-        self.assertIn(f"## [{__version__}]", (PROJECT / "CHANGELOG.md").read_text())
+        self.assertIn(f"## [{__version__}]", (PROJECT / "CHANGELOG.md").read_text(encoding="utf-8"))
         for rel in (
             "README.md", "AGENTS.md", "CLAUDE.md", "SECURITY.md", "CONTRIBUTING.md",
             "docs/PROJECT_MAP.md", "docs/CLAUDE_CODE.md", "docs/DIAGNOSTICS.md",

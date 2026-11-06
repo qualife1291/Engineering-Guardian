@@ -43,8 +43,8 @@ class CrossPlatformTests(unittest.TestCase):
                 self.assertTrue((PROJECT / item).is_file(), item)
 
     def test_windows_launcher_does_not_modify_machine_policy(self):
-        launcher = (PROJECT / "Start Engineering Guardian.cmd").read_text()
-        connector = (PROJECT / "scripts/connect_claude.ps1").read_text()
+        launcher = (PROJECT / "Start Engineering Guardian.cmd").read_text(encoding="utf-8")
+        connector = (PROJECT / "scripts/connect_claude.ps1").read_text(encoding="utf-8")
         self.assertIn("-NoProfile -ExecutionPolicy Bypass -File", launcher)
         self.assertNotIn("Set-ExecutionPolicy", connector)
         self.assertIn("--scope','local'", connector)
@@ -53,8 +53,8 @@ class CrossPlatformTests(unittest.TestCase):
     def test_version_and_docs_entrypoints(self):
         from ucg import __version__
         self.assertEqual(__version__, "0.3.1")
-        readme = (PROJECT / "README.md").read_text()
-        changelog = (PROJECT / "CHANGELOG.md").read_text()
+        readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+        changelog = (PROJECT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn("WINDOWS_SETUP_VI.md", readme)
         self.assertIn("## [0.3.1]", changelog)
         self.assertIn("CALLS", readme)
