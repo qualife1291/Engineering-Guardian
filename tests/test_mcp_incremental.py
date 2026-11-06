@@ -67,14 +67,14 @@ class GuardianV03Tests(unittest.TestCase):
 
     def test_atomic_snapshot_when_source_changes_during_parse(self):
         from ucg.engine import SourceChangedDuringScan
-        from ucg.parser import parse_file
+        from ucg.treesitter import parse_tree_sitter
         calls=[]
         def mutating_parse(path,lang,text):
             calls.append(path)
             if len(calls)==1:
                 (self.root/"provider.py").write_text("def target():\n    return 999\n",encoding="utf-8")
-            return parse_file(path,lang,text)
-        with patch("ucg.engine.parse_file",side_effect=mutating_parse):
+            return parse_tree_sitter(path,lang,text)
+        with patch("ucg.engine.parse_tree_sitter",side_effect=mutating_parse):
             with self.assertRaises(SourceChangedDuringScan):
                 scan_workspace(str(self.root),str(self.db))
         s=UCGStore(self.db)

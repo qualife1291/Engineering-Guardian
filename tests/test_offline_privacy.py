@@ -83,7 +83,7 @@ class OfflineTests(unittest.TestCase):
         self.assertFalse((self.root/"README.md").exists())
         mcp=GuardianMCP(self.service)
         names={r["name"] for r in mcp.dispatch({"jsonrpc":"2.0","id":1,"method":"tools/list"})["result"]["tools"]}
-        for n in ("guardian_tree","guardian_outline","guardian_hotspots","guardian_repo_map","guardian_snapshot_diff","guardian_offline_brief"):
+        for n in ("guardian_tree","guardian_outline","guardian_hotspots","guardian_repo_map","guardian_snapshot_diff","guardian_offline_brief","guardian_parser_status","guardian_change_impact"):
             self.assertIn(n,names)
         req={"jsonrpc":"2.0","id":2,"method":"tools/call",
              "params":{"name":"guardian_outline","arguments":{"file":"src/config.py"}}}

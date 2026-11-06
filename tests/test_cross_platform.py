@@ -52,11 +52,11 @@ class CrossPlatformTests(unittest.TestCase):
 
     def test_version_and_docs_entrypoints(self):
         from ucg import __version__
-        self.assertEqual(__version__, "0.4.0")
+        self.assertEqual(__version__, "0.5.0")
         readme = (PROJECT / "README.md").read_text(encoding="utf-8")
         changelog = (PROJECT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn("WINDOWS_SETUP_VI.md", readme)
-        self.assertIn("## [0.3.1]", changelog)
+        self.assertIn("## [0.5.0]", changelog)
         self.assertIn("CALLS", readme)
 
 
