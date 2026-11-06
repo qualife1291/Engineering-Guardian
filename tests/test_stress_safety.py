@@ -35,6 +35,16 @@ class WorkspaceScaleSafetyTests(unittest.TestCase):
             self.assertEqual([x.path for x in records],["small.py"])
             self.assertIn({"path":"oversized.py","reason":"max_file_size"},skipped)
 
+    def test_fifo_is_skipped_without_blocking(self):
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("FIFO special files are not supported on this platform")
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            os.mkfifo(root/"pipe.py")
+            records,skipped=scan_files(root)
+            self.assertEqual(records,[])
+            self.assertIn({"path":"pipe.py","reason":"non_regular_file"},skipped)
+
     def test_symlink_file_and_directory_cycle_are_not_followed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)/"root"; root.mkdir()

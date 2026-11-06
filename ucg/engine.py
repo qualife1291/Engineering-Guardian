@@ -9,7 +9,7 @@ from pathlib import Path
 from . import __version__
 from .models import EdgeRecord, FileAnalysisRecord, SymbolAnalysisRecord
 from .parser import parse_file
-from .scanner import MAX_FILE_BYTES, fingerprint, scan_files
+from .scanner import MAX_FILE_BYTES, fingerprint, read_bounded_regular_file, scan_files
 from .store import UCGStore
 from .treesitter import parse_tree_sitter, parser_available, parser_fingerprint, resolve_references
 
@@ -139,12 +139,11 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
             if path.is_symlink() or not path.resolve().is_relative_to(root_path):
                 raise SourceChangedDuringScan("Workspace file became a symlink during scan")
             try:
-                with path.open("rb") as source_file:
-                    data = source_file.read(MAX_FILE_BYTES + 1)
-                if len(data) > MAX_FILE_BYTES:
+                data, _ = read_bounded_regular_file(path, MAX_FILE_BYTES)
+                if data is None:
                     raise SourceChangedDuringScan("Source file grew beyond the configured scan size limit")
-            except OSError as exc:
-                raise SourceChangedDuringScan("Source file became unreadable during scan") from exc
+            except (OSError, ValueError) as exc:
+                raise SourceChangedDuringScan("Source file became unreadable or non-regular during scan") from exc
             if fingerprint(data) != record.fingerprint:
                 raise SourceChangedDuringScan("Source file modified during scan; retry")
             text = data.decode("utf-8", errors="replace")
