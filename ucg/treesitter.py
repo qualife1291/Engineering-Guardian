@@ -122,13 +122,20 @@ def _parser_name(language: str) -> str | None:
     return PARSER_NAMES.get(language)
 
 
-@lru_cache(maxsize=1)
+_registry_state = local()
+
+
 def parser_registry():
-    try:
-        from tree_sitter_language_pack import LanguageRegistry
-        return LanguageRegistry.new()
-    except (ImportError, OSError, RuntimeError):
-        return None
+    # The Rust/PyO3 registry is explicitly unsendable; never share it across threads.
+    registry = getattr(_registry_state, "registry", None)
+    if registry is None:
+        try:
+            from tree_sitter_language_pack import LanguageRegistry
+            registry = LanguageRegistry.new()
+        except (ImportError, OSError, RuntimeError):
+            registry = None
+        _registry_state.registry = registry
+    return registry
 
 
 @lru_cache(maxsize=None)
@@ -194,7 +201,7 @@ def install_parsers(languages: list[str]) -> dict:
         raise RuntimeError("Install the optional extra: pip install 'engineering-guardian-ucg-poc[treesitter]'") from exc
     count = download([PARSER_NAMES[x] for x in selected])
     parser_available.cache_clear()
-    parser_registry.cache_clear()
+    _registry_state.registry = None
     getattr(_parser_state, "parsers", {}).clear()
     return {"requested_languages": selected, "available_count": count,
             "status": parser_status(selected),
