@@ -192,12 +192,41 @@ def install_parsers(languages: list[str]) -> dict:
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}
 
 
+def _kind(node) -> str:
+    try:
+        return node.kind()
+    except Exception:
+        return ""
+
+
+def _start_byte(node) -> int:
+    return int(node.start_byte())
+
+
+def _end_byte(node) -> int:
+    return int(node.end_byte())
+
+
+def _start_row(node) -> int:
+    return int(node.start_position().row)
+
+
+def _end_row(node) -> int:
+    return int(node.end_position().row)
+
+
+def _children(node):
+    try:
+        return [node.named_child(i) for i in range(node.named_child_count())]
+    except Exception:
+        return []
+
+
 def _text(node, source: bytes) -> str:
     try:
-        value = node.text
-        return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else str(value)
+        return source[_start_byte(node):_end_byte(node)].decode("utf-8", errors="replace")
     except Exception:
-        return source[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+        return ""
 
 
 def _field(node, *names):
@@ -213,20 +242,22 @@ def _field(node, *names):
 
 def _name_node(node):
     value = _field(node, "name", "method", "type")
-    if value is not None and getattr(value, "type", "") in NAME_TYPES | {"type_identifier"}:
+    if value is not None and _kind(value) in NAME_TYPES | {"type_identifier"}:
         return value
-    for child in getattr(node, "named_children", []):
-        if getattr(child, "type", "") in NAME_TYPES:
+    for child in _children(node):
+        if _kind(child) in NAME_TYPES:
             return child
     return None
 
 
 def _body_node(node):
+    if node is None:
+        return None
     value = _field(node, "body", "block", "function_body")
     if value is not None:
         return value
-    for child in getattr(node, "named_children", []):
-        if getattr(child, "type", "") in BODY_TYPES:
+    for child in _children(node):
+        if _kind(child) in BODY_TYPES:
             return child
     return None
 
@@ -236,8 +267,8 @@ def _hash(data: bytes) -> str:
 
 
 def _signature(node, body, source: bytes) -> str:
-    end = body.start_byte if body is not None else node.end_byte
-    value = source[node.start_byte:end].decode("utf-8", errors="replace")
+    end = _start_byte(body) if body is not None else _end_byte(node)
+    value = source[_start_byte(node):end].decode("utf-8", errors="replace")
     value = " ".join(value.strip().split())
     return value[:500]
 
@@ -249,12 +280,12 @@ def _normal_kind(language: str, raw_kind: str, scope_kinds: list[str]) -> str:
 
 
 def _declaration(node, language: str, scope_kinds: list[str]):
-    node_type = getattr(node, "type", "")
+    node_type = _kind(node)
     kind = DECLARATIONS.get(language, {}).get(node_type)
     name_node = _name_node(node)
     if node_type == "variable_declarator":
         value = _field(node, "value")
-        if value is not None and getattr(value, "type", "") in {"arrow_function", "function_expression", "function"}:
+        if value is not None and _kind(value) in {"arrow_function", "function_expression", "function"}:
             kind = "function"
             name_node = _field(node, "name")
     if node_type == "impl_item" and name_node is None:
@@ -272,27 +303,27 @@ def _callee(node, language: str, source: bytes):
     target = _field(node, "function", "callee", "name", "method")
     receiver_node = _field(node, "object", "receiver", "operand", "target")
     if target is None:
-        candidates = [c for c in getattr(node, "named_children", []) if c.type in NAME_TYPES | ATTRIBUTE_TYPES]
+        candidates = [c for c in _children(node) if _kind(c) in NAME_TYPES | ATTRIBUTE_TYPES]
         if not candidates:
             return "", ""
         target = candidates[-1]
-    if target.type in ATTRIBUTE_TYPES:
+    target_type = _kind(target)
+    if target_type in ATTRIBUTE_TYPES:
         leaf = _field(target, "attribute", "property", "name", "field", "member")
         receiver = _field(target, "object", "operand", "scope", "value")
         if leaf is None:
-            named = list(getattr(target, "named_children", []))
+            named = _children(target)
             leaf = named[-1] if named else None
             receiver = named[0] if len(named) > 1 else receiver
         return (_text(leaf, source).strip() if leaf else "",
                 _text(receiver, source).strip() if receiver else "")
-    if target.type in NAME_TYPES:
+    if target_type in NAME_TYPES:
         return _text(target, source).strip(), (_text(receiver_node, source).strip() if receiver_node else "")
-    named = list(getattr(target, "named_children", []))
-    identifiers = [x for x in named if x.type in NAME_TYPES]
+    named = _children(target)
+    identifiers = [x for x in named if _kind(x) in NAME_TYPES]
     if identifiers:
         return _text(identifiers[-1], source).strip(), (_text(receiver_node, source).strip() if receiver_node else "")
     return "", ""
-
 
 def _split_items(value: str) -> list[str]:
     # Import lists are syntax-bounded; this small splitter handles braces/parentheses.
@@ -325,7 +356,7 @@ def _split_items(value: str) -> list[str]:
 
 def _imports_for_node(path: str, language: str, node, source: bytes) -> list[ImportRecord]:
     raw = _text(node, source).strip()
-    line = int(node.start_point.row) + 1
+    line = _start_row(node) + 1
     out = []
     def add(module, imported, local, kind):
         if module:
@@ -421,13 +452,13 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
     if not parser_name or not parser_available(language):
         return None
     try:
-        from tree_sitter import Parser
+        from tree_sitter_language_pack import get_parser
         registry = parser_registry()
         if registry is None or not registry.has_language(parser_name):
             return None
-        parser = Parser(registry.get_language(parser_name))
+        parser = get_parser(parser_name)
         source = text.encode("utf-8")
-        tree = parser.parse(source)
+        tree = parser.parse(text)
         if tree is None:
             return None
     except Exception:
@@ -444,7 +475,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
 
     def visit(node, scopes: list[tuple[str, str]], owner_id: str, type_scope: str):
         nonlocal error_count
-        if getattr(node, "is_error", False) or getattr(node, "is_missing", False):
+        if node.is_error() or node.is_missing():
             error_count += 1
         scope_names = [x[0] for x in scopes]
         scope_kinds = [x[1] for x in scopes]
@@ -454,18 +485,18 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
         next_type_scope = type_scope
         if declaration:
             kind, name = declaration
-            start = int(node.start_point.row) + 1
-            end = max(start, int(node.end_point.row) + 1)
+            start = _start_row(node) + 1
+            end = max(start, _end_row(node) + 1)
             qname = ".".join(scope_names + [name])
             body = _body_node(node)
-            if node.type == "variable_declarator":
+            if _kind(node) == "variable_declarator":
                 value = _field(node, "value")
                 body = _body_node(value) if value is not None else body
             signature = _signature(node, body, source)
             symbol_id = f"{path}:{qname}:{start}"
             symbols.append(SymbolRecord(symbol_id, name, qname, kind, path, language, start, end, signature))
-            declaration_bytes = source[node.start_byte:node.end_byte]
-            body_bytes = source[body.start_byte:body.end_byte] if body is not None else declaration_bytes
+            declaration_bytes = source[_start_byte(node):_end_byte(node)]
+            body_bytes = source[_start_byte(body):_end_byte(body)] if body is not None else declaration_bytes
             signature_bytes = signature.encode("utf-8")
             metadata.append(SymbolAnalysisRecord(
                 symbol_id, type_scope, _hash(signature_bytes), _hash(body_bytes), _hash(declaration_bytes)))
@@ -474,18 +505,18 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
                 next_owner = symbol_id
             if kind in TYPE_SCOPES:
                 next_type_scope = qname
-        if node.type in import_types:
+        if _kind(node) in import_types:
             imports.extend(_imports_for_node(path, language, node, source))
-        if node.type in call_types and owner_id:
+        if _kind(node) in call_types and owner_id:
             target, receiver = _callee(node, language, source)
             if target and target not in {"if", "for", "while", "switch", "catch", "return"}:
                 references.append(ReferenceRecord(
                     owner_id, target, receiver, node.type, path,
-                    int(node.start_point.row) + 1, int(node.start_byte), int(node.end_byte)))
-        for child in getattr(node, "named_children", []):
+                    _start_row(node) + 1, _start_byte(node), _end_byte(node)))
+        for child in _children(node):
             visit(child, next_scopes, next_owner, next_type_scope)
 
-    visit(tree.root_node, [], "", "")
+    visit(tree.root_node(), [], "", "")
     status = "partial" if error_count else "ok"
     return ParseBundle(
         symbols, imports, references,
