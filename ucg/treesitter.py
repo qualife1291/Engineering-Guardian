@@ -18,6 +18,8 @@ from .models import (
     FileAnalysisRecord, ImportRecord, ReferenceRecord, SymbolAnalysisRecord, SymbolRecord,
 )
 
+PARSER_EXTRACTOR_VERSION = "2"
+
 PARSER_NAMES = {
     "python": "python", "typescript": "typescript", "javascript": "javascript",
     "dart": "dart", "kotlin": "kotlin", "java": "java", "sql": "sql",
@@ -192,6 +194,7 @@ def install_parsers(languages: list[str]) -> dict:
     count = download([PARSER_NAMES[x] for x in selected])
     parser_available.cache_clear()
     parser_registry.cache_clear()
+    _get_parser.cache_clear()
     return {"requested_languages": selected, "available_count": count,
             "status": parser_status(selected),
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}
@@ -458,6 +461,12 @@ def _get_parser(language: str):
     return get_parser(_parser_name(language))
 
 
+def parser_fingerprint(language: str) -> str:
+    if parser_available(language):
+        return f"tree-sitter-language-pack:{_version('tree-sitter-language-pack')}:extractor-{PARSER_EXTRACTOR_VERSION}"
+    return f"stdlib:extractor-{PARSER_EXTRACTOR_VERSION}"
+
+
 def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None:
     parser_name = _parser_name(language)
     if not parser_name or not parser_available(language):
@@ -534,7 +543,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
     return ParseBundle(
         symbols, imports, references,
         FileAnalysisRecord(path, "tree_sitter", status, error_count,
-                           _version("tree-sitter-language-pack")),
+                           parser_fingerprint(language)),
         metadata,
     )
 

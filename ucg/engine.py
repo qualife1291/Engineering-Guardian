@@ -11,7 +11,7 @@ from .models import EdgeRecord, FileAnalysisRecord, SymbolAnalysisRecord
 from .parser import parse_file
 from .scanner import MAX_FILE_BYTES, fingerprint, scan_files
 from .store import UCGStore
-from .treesitter import parse_tree_sitter, parser_available, resolve_references
+from .treesitter import parse_tree_sitter, parser_available, parser_fingerprint, resolve_references
 
 CALL_PATTERN = re.compile(r"\b([A-Za-z_]\w*)\s*\(")
 
@@ -22,7 +22,7 @@ class SourceChangedDuringScan(RuntimeError):
 
 def snapshot_identity(root: Path, records: list) -> str:
     h = hashlib.blake2b(digest_size=16)
-    for value in (str(root), __version__, "graph-schema-v4"):
+    for value in (str(root), __version__, "graph-schema-v5", "parser-pipeline-v2"):
         h.update(value.encode("utf-8"))
         h.update(b"\0")
     for rec in records:
@@ -103,7 +103,13 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
             record.path for record in records
             if old_hashes.get(record.path) == record.fingerprint
             and record.path in old_analysis
-            and old_analysis[record.path].parser_backend == expected_backends[record.path]
+            and (
+                (old_analysis[record.path].parser_backend == expected_backends[record.path]
+                 and old_analysis[record.path].parser_version == parser_fingerprint(record.language))
+                or (expected_backends[record.path] == "tree_sitter"
+                    and old_analysis[record.path].parse_status == "fallback_after_tree_sitter_error"
+                    and old_analysis[record.path].parser_version == parser_fingerprint(record.language) + ":failed")
+            )
         ]
         cached = store.get_cached_file_data(previous, reusable_paths) if previous and reusable_paths else {}
         all_symbols = []
@@ -167,8 +173,15 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
                     if symbol.kind in {"function", "method"}:
                         call_sites.extend(call_sites_for_symbol(symbol, lines))
                 backend = _fallback_backend(record.language)
+                parse_status = "fallback_after_tree_sitter_error" if any(
+                    d.get("type") == "tree_sitter_runtime_fallback" and d.get("language") == record.language
+                    for d in diagnostics[-1:]
+                ) else "heuristic"
+                parser_version = parser_fingerprint(record.language)
+                if parse_status == "fallback_after_tree_sitter_error":
+                    parser_version += ":failed"
                 file_analysis.append(FileAnalysisRecord(
-                    record.path, backend, "heuristic", 0, "stdlib"))
+                    record.path, backend, parse_status, 0, parser_version))
                 symbol_analysis.extend(_fallback_symbol_analysis(symbols, text))
                 if not symbols and record.line_count:
                     diagnostics.append({"type": "no_symbols_or_parse_failure", "language": record.language})

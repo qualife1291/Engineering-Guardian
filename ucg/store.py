@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS imports(
   PRIMARY KEY(snapshot_id,file_path,module_specifier,imported_name,local_name,line)
 );
 CREATE INDEX IF NOT EXISTS idx_imports_resolved ON imports(snapshot_id,resolved_path,file_path);
+CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(snapshot_id,file_path);
 CREATE TABLE IF NOT EXISTS symbol_references(
   snapshot_id TEXT NOT NULL, source_id TEXT NOT NULL, target_name TEXT NOT NULL,
   receiver TEXT NOT NULL, syntax_kind TEXT NOT NULL, evidence_path TEXT NOT NULL,
@@ -68,6 +69,8 @@ CREATE TABLE IF NOT EXISTS symbol_references(
 );
 CREATE INDEX IF NOT EXISTS idx_references_target ON symbol_references(snapshot_id,target_id);
 CREATE INDEX IF NOT EXISTS idx_references_source ON symbol_references(snapshot_id,source_id);
+CREATE INDEX IF NOT EXISTS idx_references_file ON symbol_references(snapshot_id,evidence_path);
+CREATE INDEX IF NOT EXISTS idx_references_name ON symbol_references(snapshot_id,target_name,target_id);
 CREATE TABLE IF NOT EXISTS symbol_analysis(
   snapshot_id TEXT NOT NULL, symbol_id TEXT NOT NULL, scope_name TEXT NOT NULL,
   signature_hash TEXT NOT NULL, body_hash TEXT NOT NULL, declaration_hash TEXT NOT NULL,
@@ -123,48 +126,55 @@ class UCGStore:
                         references: list[ReferenceRecord] | None = None,
                         symbol_analysis: list[SymbolAnalysisRecord] | None = None) -> None:
         """Commit the entire graph atomically; a failed scan cannot leak partial data."""
-        with self.conn:
-            self.conn.execute("INSERT INTO snapshots(snapshot_id,root_path) VALUES(?,?)", (snapshot_id, root))
-            self.conn.executemany("INSERT INTO files VALUES(?,?,?,?,?,?)", [
-                (snapshot_id,f.path,f.language,f.size_bytes,f.line_count,f.fingerprint) for f in files
-            ])
-            self.conn.executemany("INSERT INTO symbols VALUES(?,?,?,?,?,?,?,?,?,?)", [
-                (snapshot_id,s.symbol_id,s.name,s.qualified_name,s.kind,s.file_path,s.language,s.start_line,s.end_line,s.signature)
-                for s in symbols
-            ])
-            self.conn.executemany("INSERT INTO call_sites VALUES(?,?,?,?,?)", [
-                (snapshot_id,src,name,path,line) for src,name,path,line in call_sites
-            ])
-            self.conn.executemany("INSERT INTO edges VALUES(?,?,?,?,?,?,?)", [
-                (snapshot_id,e.source_id,e.target_id,e.relation,e.resolution,e.evidence_path,e.evidence_line)
-                for e in edges
-            ])
-            self.conn.executemany(
-                "INSERT INTO symbol_fts(snapshot_id,symbol_id,name,qualified_name,signature,file_path) VALUES(?,?,?,?,?,?)",
-                [(snapshot_id,s.symbol_id,s.name,s.qualified_name,s.signature,s.file_path) for s in symbols]
-            )
-            self.conn.executemany(
-                "INSERT INTO file_analysis VALUES(?,?,?,?,?,?)",
-                [(snapshot_id,x.file_path,x.parser_backend,x.parse_status,x.error_count,x.parser_version)
-                 for x in (file_analysis or [])]
-            )
-            self.conn.executemany(
-                "INSERT INTO imports VALUES(?,?,?,?,?,?,?,?)",
-                [(snapshot_id,x.file_path,x.module_specifier,x.imported_name,x.local_name,
-                  x.import_kind,x.line,x.resolved_path) for x in (imports or [])]
-            )
-            self.conn.executemany(
-                "INSERT INTO symbol_references VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                [(snapshot_id,x.source_id,x.target_name,x.receiver,x.syntax_kind,x.evidence_path,
-                  x.evidence_line,x.start_byte,x.end_byte,x.resolution,x.target_id,
-                  x.confidence,x.reason) for x in (references or [])]
-            )
-            self.conn.executemany(
-                "INSERT INTO symbol_analysis VALUES(?,?,?,?,?,?)",
-                [(snapshot_id,x.symbol_id,x.scope_name,x.signature_hash,x.body_hash,x.declaration_hash)
-                 for x in (symbol_analysis or [])]
-            )
-
+        try:
+            with self.conn:
+                self.conn.execute("INSERT INTO snapshots(snapshot_id,root_path) VALUES(?,?)", (snapshot_id, root))
+                self.conn.executemany("INSERT INTO files VALUES(?,?,?,?,?,?)", [
+                    (snapshot_id,f.path,f.language,f.size_bytes,f.line_count,f.fingerprint) for f in files
+                ])
+                self.conn.executemany("INSERT INTO symbols VALUES(?,?,?,?,?,?,?,?,?,?)", [
+                    (snapshot_id,s.symbol_id,s.name,s.qualified_name,s.kind,s.file_path,s.language,s.start_line,s.end_line,s.signature)
+                    for s in symbols
+                ])
+                self.conn.executemany("INSERT INTO call_sites VALUES(?,?,?,?,?)", [
+                    (snapshot_id,src,name,path,line) for src,name,path,line in call_sites
+                ])
+                self.conn.executemany("INSERT INTO edges VALUES(?,?,?,?,?,?,?)", [
+                    (snapshot_id,e.source_id,e.target_id,e.relation,e.resolution,e.evidence_path,e.evidence_line)
+                    for e in edges
+                ])
+                self.conn.executemany(
+                    "INSERT INTO symbol_fts(snapshot_id,symbol_id,name,qualified_name,signature,file_path) VALUES(?,?,?,?,?,?)",
+                    [(snapshot_id,s.symbol_id,s.name,s.qualified_name,s.signature,s.file_path) for s in symbols]
+                )
+                self.conn.executemany(
+                    "INSERT INTO file_analysis VALUES(?,?,?,?,?,?)",
+                    [(snapshot_id,x.file_path,x.parser_backend,x.parse_status,x.error_count,x.parser_version)
+                     for x in (file_analysis or [])]
+                )
+                self.conn.executemany(
+                    "INSERT INTO imports VALUES(?,?,?,?,?,?,?,?)",
+                    [(snapshot_id,x.file_path,x.module_specifier,x.imported_name,x.local_name,
+                      x.import_kind,x.line,x.resolved_path) for x in (imports or [])]
+                )
+                self.conn.executemany(
+                    "INSERT INTO symbol_references VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [(snapshot_id,x.source_id,x.target_name,x.receiver,x.syntax_kind,x.evidence_path,
+                      x.evidence_line,x.start_byte,x.end_byte,x.resolution,x.target_id,
+                      x.confidence,x.reason) for x in (references or [])]
+                )
+                self.conn.executemany(
+                    "INSERT INTO symbol_analysis VALUES(?,?,?,?,?,?)",
+                    [(snapshot_id,x.symbol_id,x.scope_name,x.signature_hash,x.body_hash,x.declaration_hash)
+                     for x in (symbol_analysis or [])]
+                )
+    
+        except sqlite3.IntegrityError:
+            # Two readers may finish the same immutable snapshot concurrently.
+            # The first committed transaction wins; the second safely reuses it.
+            if self.has_snapshot(snapshot_id, root):
+                return
+            raise
 
     def get_file_analysis_map(self, snapshot_id: str) -> dict[str, FileAnalysisRecord]:
         rows = self.conn.execute(
@@ -205,16 +215,12 @@ class UCGStore:
             for row in rows:
                 result[row[4]]["references"].append(ReferenceRecord(*row))
             rows = self.conn.execute(
-                "SELECT a.symbol_id,a.scope_name,a.signature_hash,a.body_hash,a.declaration_hash "
+                "SELECT s.file_path,a.symbol_id,a.scope_name,a.signature_hash,a.body_hash,a.declaration_hash "
                 "FROM symbol_analysis a JOIN symbols s "
                 "ON s.snapshot_id=a.snapshot_id AND s.symbol_id=a.symbol_id "
                 f"WHERE a.snapshot_id=? AND s.file_path IN ({marks})", args).fetchall()
             for row in rows:
-                symbol_id = row[0]
-                # Symbol IDs are unique within a snapshot; file prefix is used only for grouping.
-                file_path = symbol_id.split(":", 1)[0]
-                if file_path in result:
-                    result[file_path]["symbol_analysis"].append(SymbolAnalysisRecord(*row))
+                result[row[0]]["symbol_analysis"].append(SymbolAnalysisRecord(*row[1:]))
             rows = self.conn.execute(
                 "SELECT path,parser_backend,parse_status,error_count,parser_version "
                 f"FROM file_analysis WHERE snapshot_id=? AND path IN ({marks})", args).fetchall()
