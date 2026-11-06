@@ -110,6 +110,8 @@ def main():
         store.close()
 
     cpu_seconds = time.process_time()-cpu_start
+    if overview["symbols"] <= 0:
+        raise SystemExit("Stress benchmark extracted zero symbols; parser coverage must not be accepted as a pass")
     source_bytes = overview["bytes"]
     files = overview["files"]
     lines = overview["lines"]

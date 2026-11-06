@@ -14,6 +14,35 @@ from ucg.treesitter import (
 
 
 @unittest.skipUnless(parser_available("python"), "Tree-sitter Python grammar is not installed")
+class TreeSitterRuntimeApiTests(unittest.TestCase):
+    def test_runtime_node_api_is_visible_and_has_children(self):
+        from tree_sitter_language_pack import get_parser
+        parser = get_parser("python")
+        tree = parser.parse(b"def sample():\n    return 1\n")
+        root = tree.root_node
+        named = getattr(root, "named_children", None)
+        if callable(named):
+            named = named()
+        children = getattr(root, "children", None)
+        if callable(children):
+            children = children()
+        print("TREE_SITTER_RUNTIME_API", {
+            "tree_type": type(tree).__name__,
+            "root_type": type(root).__name__,
+            "root_dir": [x for x in dir(root) if not x.startswith("_")],
+            "root_kind": str(getattr(root, "kind", None)),
+            "root_type_value": str(getattr(root, "type", None)),
+            "named_children_type": type(named).__name__,
+            "named_children_count": len(named) if named is not None else None,
+            "children_type": type(children).__name__,
+            "children_count": len(children) if children is not None else None,
+            "named_child_count": str(getattr(root, "named_child_count", None)),
+            "child_count": str(getattr(root, "child_count", None)),
+        })
+        self.assertTrue(named or children)
+
+
+@unittest.skipUnless(parser_available("python"), "Tree-sitter Python grammar is not installed")
 class TreeSitterPythonTests(unittest.TestCase):
     def test_python_symbols_import_alias_and_utf8_lines(self):
         provider = "def normalize(value):\n    return value.strip()\n"

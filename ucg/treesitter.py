@@ -211,8 +211,10 @@ def _value(node, name, default=None):
 
 def _kind(node) -> str:
     value = _value(node, "type")
-    if value is None:
-        value = _value(node, "kind", "")
+    if not value:
+        value = _value(node, "kind")
+    if not value:
+        value = _value(node, "node_type", "")
     return str(value or "")
 
 
@@ -247,16 +249,33 @@ def _end_row(node) -> int:
 
 
 def _children(node):
+    # Support both py-tree-sitter's property API and language-pack Node wrappers.
     children = _value(node, "named_children")
     if children is not None:
         try:
-            return list(children)
+            values = list(children)
+            if values:
+                return values
         except TypeError:
             pass
-    count = _value(node, "named_child_count", 0)
+    count = _value(node, "named_child_count")
     named_child = getattr(node, "named_child", None)
-    if callable(named_child):
-        return [named_child(i) for i in range(int(count))]
+    if count is not None and callable(named_child):
+        values = [named_child(i) for i in range(int(count))]
+        if values:
+            return values
+    children = _value(node, "children")
+    if children is not None:
+        try:
+            values = list(children)
+            if values:
+                return values
+        except TypeError:
+            pass
+    count = _value(node, "child_count", 0)
+    child = getattr(node, "child", None)
+    if callable(child):
+        return [child(i) for i in range(int(count))]
     return []
 
 
