@@ -511,7 +511,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
             target, receiver = _callee(node, language, source)
             if target and target not in {"if", "for", "while", "switch", "catch", "return"}:
                 references.append(ReferenceRecord(
-                    owner_id, target, receiver, node.type, path,
+                    owner_id, target, receiver, _kind(node), path,
                     _start_row(node) + 1, _start_byte(node), _end_byte(node)))
         for child in _children(node):
             visit(child, next_scopes, next_owner, next_type_scope)
