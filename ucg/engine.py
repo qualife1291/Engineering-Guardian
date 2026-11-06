@@ -177,6 +177,15 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
         for symbol in all_symbols:
             if symbol.kind in {"function", "method"}:
                 by_name.setdefault(symbol.name, []).append(symbol)
+        # A globally unique name match remains a low-confidence candidate, never
+        # upgraded to a Tree-sitter binding without an explicit import or local scope.
+        for ref in references:
+            if ref.target_id:
+                continue
+            candidates = [s for s in by_name.get(ref.target_name, []) if s.symbol_id != ref.source_id]
+            if len(candidates) == 1:
+                edges.append(EdgeRecord(ref.source_id, candidates[0].symbol_id, "CALLS",
+                                        "ast_candidate", ref.evidence_path, ref.evidence_line))
         for src, name, evidence_path, line in call_sites:
             if evidence_path not in fallback_paths:
                 continue
