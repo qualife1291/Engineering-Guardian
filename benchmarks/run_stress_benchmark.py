@@ -80,8 +80,10 @@ def main():
     incremental_seconds = None
     if candidates:
         changed = candidates[0]
+        suffix = changed.suffix.lower()
+        comment = "#" if suffix in {".py",".pyi"} else "--" if suffix == ".sql" else "//"
         with changed.open("a",encoding="utf-8") as stream:
-            stream.write("\n# deterministic incremental benchmark marker\n")
+            stream.write(f"\n{comment} deterministic incremental benchmark marker\n")
         started = time.perf_counter()
         incremental = scan_workspace(str(root),str(last_db))
         incremental_seconds = time.perf_counter()-started

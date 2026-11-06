@@ -195,7 +195,7 @@ def install_parsers(languages: list[str]) -> dict:
     count = download([PARSER_NAMES[x] for x in selected])
     parser_available.cache_clear()
     parser_registry.cache_clear()
-    _parser_state.parsers.clear()
+    getattr(_parser_state, "parsers", {}).clear()
     return {"requested_languages": selected, "available_count": count,
             "status": parser_status(selected),
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}

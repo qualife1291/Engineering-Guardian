@@ -11,7 +11,7 @@ def main() -> int:
     # JSON/Markdown over stdout must use UTF-8 even on legacy Windows code pages.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
-    p=argparse.ArgumentParser(prog="guardian",description="Engineering Guardian POC v0.4 (local, read-only source indexing)")
+    p=argparse.ArgumentParser(prog="guardian",description="Engineering Guardian v0.5.0 (local, read-only source indexing)")
     p.add_argument("--root",default=".",help="Authorized project folder; defaults to current directory")
     p.add_argument("--db",default=None,help="SQLite path; default is external ~/.engineering-guardian/indexes")
     sub=p.add_subparsers(dest="command",required=True)
@@ -59,7 +59,7 @@ def main() -> int:
     parser_sub=parsers.add_subparsers(dest="parser_command",required=True)
     parser_sub.add_parser("status",help="Show installed parser grammars; never accesses network")
     install=parser_sub.add_parser("install",help="Explicitly download grammar binaries into local cache")
-    install.add_argument("--languages",default="python,typescript,javascript,dart,kotlin,java,sql,go,rust")
+    install.add_argument("--languages",default="python,typescript,javascript,dart,kotlin,java,sql,go,rust,protobuf")
     sub.add_parser("support-bundle",help="Export privacy-filtered diagnostic ZIP to share for upgrades")
     sub.add_parser("log-summary",help="Aggregate anonymous quality/performance diagnostic metrics")
     sub.add_parser("doctor",help="Inspect local environment and index health")
