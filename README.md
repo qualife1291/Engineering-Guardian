@@ -2,7 +2,7 @@
 
 **Local-first code intelligence for developers and AI coding assistants.** Scan a folder (Git not required), find symbols and candidate call relationships, and give Claude Code small, source-backed context instead of dumping an entire codebase into an LLM.
 
-> **Status: v0.3.0 proof of concept (Python, standard library only).** This is **not** the future Rust/Tree-sitter/SCIP engine. Python uses AST; Dart, Kotlin, TypeScript and other supported languages currently use regex/brace heuristics. All `CALLS` edges are **candidates, not compiler-verified dependencies**. Do not rely on them alone for merge/security decisions.
+> **Status: v0.4.0 proof of concept (Python, standard library only).** This is **not** the future Rust/Tree-sitter/SCIP engine. Python uses AST; Dart, Kotlin, TypeScript and other supported languages currently use regex/brace heuristics. All `CALLS` edges are **candidates, not compiler-verified dependencies**. Do not rely on them alone for merge/security decisions.
 
 [Changelog](CHANGELOG.md) · [Tiếng Việt: bắt đầu nhanh](docs/EASY_START_VI.md) · [Claude Code MCP](docs/CLAUDE_CODE.md) · [Ví dụ sử dụng](docs/USAGE_EXAMPLES_VI.md) · [Đọc nhanh cho AI](AGENTS.md)
 
@@ -64,9 +64,9 @@ Download/clone this repository, then **double-click `Start Engineering Guardian.
 To connect Claude Code from PowerShell (replace the sample paths):
 
 ```powershell
-cd 'D:\\Dev\\Engineering-Guardian'
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'D:\\Dev\\airvoice-wireless-app'
-cd 'D:\\Dev\\airvoice-wireless-app'
+cd 'C:\\Projects\\Engineering-Guardian'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'C:\\Projects\\sample-app'
+cd 'C:\\Projects\\sample-app'
 claude
 # In Claude Code: /mcp
 ```
@@ -112,7 +112,7 @@ CLI/Menu    <--------------------------/    |
                                             +--> JSONL operational diagnostics
 ```
 
-Source files are read but **not modified**. Default data home: `~/.engineering-guardian/`. Put the cache on an external SSD by setting `GUARDIAN_HOME=/Volumes/ExternalSSD/GuardianData` **before** running Guardian/Claude.
+Source files are read but **not modified**. Default data home: `~/.engineering-guardian/`. Put the cache on an external SSD by setting `GUARDIAN_HOME=/path/to/GuardianData` **before** running Guardian/Claude.
 
 The MCP server is fixed to **one workspace path**. Scans and source queries are always initiated by a user/agent request; they are not automatic background monitors.
 

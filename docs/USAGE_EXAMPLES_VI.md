@@ -11,8 +11,8 @@ python3 -m ucg.cli --root '/path/to/static-source' search renderVideo
 ## 2) Quét app Flutter có Dart + Kotlin
 
 ```bash
-python3 -m ucg.cli --root '/Volumes/ExternalSSD/development/HTH/airvoice-wireless-app' scan
-python3 -m ucg.cli --root '/Volumes/ExternalSSD/development/HTH/airvoice-wireless-app' search downloadProfile
+python3 -m ucg.cli --root '/path/to/workspace/sample-app' scan
+python3 -m ucg.cli --root '/path/to/workspace/sample-app' search processOrder
 ```
 
 Dùng kết quả `symbol_id` để tra `callers` hoặc `callees`. Quan hệ liên ngôn ngữ hiện **chưa giải quyết chính xác**, cần đối chiếu code gốc.

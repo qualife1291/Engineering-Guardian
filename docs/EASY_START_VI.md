@@ -12,7 +12,7 @@
 ## Cài đặt lần đầu
 
 1. Tải ZIP `engineering-guardian-easy-start.zip`.
-2. Giải nén vào nơi muốn lưu, ví dụ `/Volumes/ExternalSSD/EngineeringGuardian`.
+2. Giải nén vào nơi muốn lưu, ví dụ `/path/to/EngineeringGuardian`.
 3. Mở folder vừa giải nén.
 4. Nhấn đúp `Start Engineering Guardian.command`.
 5. Nếu macOS chặn file, nhấn chuột phải → **Open** → **Open**.
@@ -49,7 +49,7 @@ Mặc định: `~/.engineering-guardian/`
 Có thể đặt dữ liệu trên SSD ngoài bằng cách mở Terminal và chạy:
 
 ```bash
-export GUARDIAN_HOME="/Volumes/ExternalSSD/EngineeringGuardianData"
+export GUARDIAN_HOME="/path/to/EngineeringGuardianData"
 ```
 
 Sau đó khởi chạy file `Start Engineering Guardian.command` từ cùng cửa sổ Terminal.
