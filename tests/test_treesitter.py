@@ -47,7 +47,7 @@ class TreeSitterRuntimeApiTests(unittest.TestCase):
             "first_type": _kind(first) if first is not None else None,
             "first_named_types": [_kind(x) for x in _children(first)] if first is not None else None,
             "first_name": _kind(_name_node(first)) if first is not None and _name_node(first) is not None else None,
-            "first_decl": _declaration(first, "python", []) if first is not None else None,
+            "first_decl": _declaration(first, "python", [], b"def sample():\n    return 1\n") if first is not None else None,
         })
 
 

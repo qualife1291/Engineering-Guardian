@@ -352,7 +352,7 @@ def _normal_kind(language: str, raw_kind: str, scope_kinds: list[str]) -> str:
     return raw_kind
 
 
-def _declaration(node, language: str, scope_kinds: list[str]):
+def _declaration(node, language: str, scope_kinds: list[str], source: bytes):
     node_type = _kind(node)
     kind = DECLARATIONS.get(language, {}).get(node_type)
     name_node = _name_node(node)
@@ -365,7 +365,7 @@ def _declaration(node, language: str, scope_kinds: list[str]):
         name_node = _field(node, "type")
     if kind is None or name_node is None:
         return None
-    name = _text(name_node, b"").strip()
+    name = _text(name_node, source).strip()
     if not name or name in {"_", "anonymous"}:
         return None
     kind = _normal_kind(language, kind, scope_kinds)
@@ -574,7 +574,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
             error_count += 1
         scope_names = [x[0] for x in scopes]
         scope_kinds = [x[1] for x in scopes]
-        declaration = _declaration(node, language, scope_kinds)
+        declaration = _declaration(node, language, scope_kinds, source)
         next_scopes = scopes
         next_owner = owner_id
         next_type_scope = type_scope
