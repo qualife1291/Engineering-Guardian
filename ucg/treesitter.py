@@ -201,34 +201,72 @@ def install_parsers(languages: list[str]) -> dict:
             "notice": "Grammar downloads occur only because this install command was explicitly requested."}
 
 
-def _kind(node) -> str:
+def _value(node, name, default=None):
     try:
-        return node.type
+        value = getattr(node, name)
+        return value() if callable(value) else value
     except Exception:
-        return ""
+        return default
+
+
+def _kind(node) -> str:
+    value = _value(node, "type")
+    if value is None:
+        value = _value(node, "kind", "")
+    return str(value or "")
 
 
 def _start_byte(node) -> int:
-    return int(node.start_byte)
+    value = _value(node, "start_byte")
+    if value is None:
+        value = _value(node, "start_position")
+        value = getattr(value, "byte", 0)
+    return int(value)
 
 
 def _end_byte(node) -> int:
-    return int(node.end_byte)
+    value = _value(node, "end_byte")
+    if value is None:
+        value = _value(node, "end_position")
+        value = getattr(value, "byte", 0)
+    return int(value)
 
 
 def _start_row(node) -> int:
-    return int(node.start_point.row)
+    value = _value(node, "start_point")
+    if value is None:
+        value = _value(node, "start_position")
+    return int(getattr(value, "row", 0))
 
 
 def _end_row(node) -> int:
-    return int(node.end_point.row)
+    value = _value(node, "end_point")
+    if value is None:
+        value = _value(node, "end_position")
+    return int(getattr(value, "row", 0))
 
 
 def _children(node):
-    try:
-        return list(node.named_children)
-    except Exception:
-        return []
+    children = _value(node, "named_children")
+    if children is not None:
+        try:
+            return list(children)
+        except TypeError:
+            pass
+    count = _value(node, "named_child_count", 0)
+    named_child = getattr(node, "named_child", None)
+    if callable(named_child):
+        return [named_child(i) for i in range(int(count))]
+    return []
+
+
+def _root_node(tree):
+    return _value(tree, "root_node")
+
+
+def _node_flag(node, name) -> bool:
+    return bool(_value(node, name, False))
+
 
 
 def _text(node, source: bytes) -> str:
@@ -503,10 +541,10 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
     import_types = IMPORT_TYPES.get(language, set())
 
     # Iterative traversal avoids Python recursion limits on deeply nested generated code.
-    stack = [(tree.root_node, [], "", "")]
+    stack = [(_root_node(tree), [], "", "")]
     while stack:
         node, scopes, owner_id, type_scope = stack.pop()
-        if node.is_error or node.is_missing:
+        if _node_flag(node, "is_error") or _node_flag(node, "is_missing"):
             error_count += 1
         scope_names = [x[0] for x in scopes]
         scope_kinds = [x[1] for x in scopes]
