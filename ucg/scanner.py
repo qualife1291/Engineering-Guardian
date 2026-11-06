@@ -45,7 +45,11 @@ def scan_files(root: str | Path, extra_excludes: set[str] | None = None, max_fil
                 size = path.stat().st_size
                 if size > max_file_bytes:
                     skipped.append({"path": rel, "reason": "max_file_size"}); continue
-                data = path.read_bytes()
+                with path.open("rb") as source_file:
+                    data = source_file.read(max_file_bytes + 1)
+                if len(data) > max_file_bytes:
+                    skipped.append({"path": rel, "reason": "max_file_size"})
+                    continue
                 text = data.decode("utf-8", errors="replace")
                 lines = text.count("\n") + (1 if text and not text.endswith("\n") else 0)
                 records.append(FileRecord(rel, lang, size, lines, fingerprint(data)))

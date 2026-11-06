@@ -1,6 +1,6 @@
 # Engineering Guardian
 
-**Local-first code intelligence for developers and AI coding assistants.** Scan a folder (Git not required), find symbols and candidate call relationships, and give Claude Code small, source-backed context instead of dumping an entire codebase into an LLM.
+**Local-first code intelligence for developers and AI coding assistants.** Scan a folder (Git not required), find symbols and CALLS relationships, and give Claude Code small, source-backed context instead of dumping an entire codebase into an LLM.
 
 > **Status: v0.5.0 proof of concept.** Tree-sitter is optional; after explicitly installing local grammars, supported languages use syntax-tree extraction. If a grammar is unavailable, Python AST or regex/brace fallback is used. `tree_sitter_*` edges are conservative syntactic bindings, while `ast_candidate` edges are heuristics. Neither is compiler/type-checker proof; dynamic dispatch and reflection can remain unresolved.
 

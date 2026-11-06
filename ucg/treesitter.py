@@ -194,30 +194,30 @@ def install_parsers(languages: list[str]) -> dict:
 
 def _kind(node) -> str:
     try:
-        return node.kind()
+        return node.type
     except Exception:
         return ""
 
 
 def _start_byte(node) -> int:
-    return int(node.start_byte())
+    return int(node.start_byte)
 
 
 def _end_byte(node) -> int:
-    return int(node.end_byte())
+    return int(node.end_byte)
 
 
 def _start_row(node) -> int:
-    return int(node.start_position().row)
+    return int(node.start_point.row)
 
 
 def _end_row(node) -> int:
-    return int(node.end_position().row)
+    return int(node.end_point.row)
 
 
 def _children(node):
     try:
-        return [node.named_child(i) for i in range(node.named_child_count())]
+        return list(node.named_children)
     except Exception:
         return []
 
@@ -458,7 +458,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
             return None
         parser = get_parser(parser_name)
         source = text.encode("utf-8")
-        tree = parser.parse(text)
+        tree = parser.parse(source)
         if tree is None:
             return None
     except Exception:
@@ -475,7 +475,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
 
     def visit(node, scopes: list[tuple[str, str]], owner_id: str, type_scope: str):
         nonlocal error_count
-        if node.is_error() or node.is_missing():
+        if node.is_error or node.is_missing:
             error_count += 1
         scope_names = [x[0] for x in scopes]
         scope_kinds = [x[1] for x in scopes]
@@ -516,7 +516,7 @@ def parse_tree_sitter(path: str, language: str, text: str) -> ParseBundle | None
         for child in _children(node):
             visit(child, next_scopes, next_owner, next_type_scope)
 
-    visit(tree.root_node(), [], "", "")
+    visit(tree.root_node, [], "", "")
     status = "partial" if error_count else "ok"
     return ParseBundle(
         symbols, imports, references,
