@@ -20,14 +20,15 @@ LOG_FORMAT = 1
 SAFE_EVENTS = {"scan", "tool_call", "context", "index_status", "self_check", "support_bundle"}
 SAFE_FIELDS = {
     "duration_ms", "success", "cache_hit", "files", "lines", "symbols", "edges",
-    "parsed_files", "reused_files", "skipped_files", "diagnostic_count",
+    "parsed_files", "reused_files", "skipped_files", "diagnostic_count", "tree_sitter_files",
+    "resolved_references", "unresolved_references", "parse_errors",
     "context_characters", "context_tokens_estimate", "truncated", "index_status",
     "tool_name", "failure_type", "error_code", "scan_ms", "parse_ms", "graph_ms", "persist_ms",
 }
 SAFE_TOOLS = {"guardian_scan", "guardian_overview", "guardian_find_symbol", "guardian_get_callers",
               "guardian_get_callees", "guardian_get_context", "guardian_index_status", "guardian_support_log",
               "guardian_tree", "guardian_outline", "guardian_hotspots", "guardian_repo_map",
-              "guardian_snapshot_diff", "guardian_offline_brief"}
+              "guardian_snapshot_diff", "guardian_offline_brief", "guardian_parser_status", "guardian_change_impact"}
 
 
 def data_home() -> Path:

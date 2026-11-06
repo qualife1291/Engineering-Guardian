@@ -37,6 +37,8 @@ TOOL_LIST=[
     {"name":"guardian_repo_map","description":"Compact local symbol map with PageRank-inspired and diverse ranking. No AI/network and no source bodies.","inputSchema":{"type":"object","properties":{"focus":{"type":"string","maxLength":200},"max_chars":{"type":"integer","minimum":256,"maximum":32000},"limit":{"type":"integer","minimum":1,"maximum":500}},"additionalProperties":False}},
     {"name":"guardian_snapshot_diff","description":"Compare versioned source snapshots without Git using exact file fingerprints and structural symbols; not a semantic diff.","inputSchema":{"type":"object","properties":{"base":{"type":"string","maxLength":100},"head":{"type":"string","maxLength":100},"limit":{"type":"integer","minimum":1,"maximum":1000}},"additionalProperties":False}},
     {"name":"guardian_offline_brief","description":"Generate read-only local Markdown codebase summary and navigation map; does not write to project.","inputSchema":{"type":"object","properties":{"focus":{"type":"string","maxLength":200},"max_chars":{"type":"integer","minimum":256,"maximum":32000}},"additionalProperties":False}},
+    {"name":"guardian_parser_status","description":"Show Tree-sitter package and cached grammar availability. This is offline and never downloads parsers.","inputSchema":{"type":"object","properties":{},"additionalProperties":False}},
+    {"name":"guardian_change_impact","description":"Offline Change X-Ray across two indexed snapshots: changed symbols, reverse dependents, affected tests and unresolved references. Static analysis only; does not run tests or prove runtime behavior.","inputSchema":{"type":"object","properties":{"base":{"type":"string","maxLength":100},"head":{"type":"string","maxLength":100},"depth":{"type":"integer","minimum":1,"maximum":5},"limit":{"type":"integer","minimum":1,"maximum":500}},"additionalProperties":False}},
     {"name":"guardian_support_log", "description":"Export sanitized JSONL performance/quality diagnostics ZIP with NO source, prompt text or paths. Return local ZIP location.",
      "inputSchema":{"type":"object","properties":{},"additionalProperties":False}},
 ]
@@ -62,6 +64,8 @@ class GuardianMCP:
             "guardian_repo_map":lambda args:self.service.repo_map(args.get("focus",""),args.get("max_chars",6000),args.get("limit",80)),
             "guardian_snapshot_diff":lambda args:self.service.diff(args.get("base"),args.get("head"),args.get("limit",100)),
             "guardian_offline_brief":lambda args:self.service.brief(args.get("focus",""),args.get("max_chars",6000)),
+            "guardian_parser_status":lambda args:self.service.parser_status(),
+            "guardian_change_impact":lambda args:self.service.change_impact(args.get("base"),args.get("head"),args.get("depth",3),args.get("limit",100)),
             "guardian_support_log":lambda args:self.service.support_log(),
         }
 
@@ -89,7 +93,7 @@ class GuardianMCP:
             return self.response(req_id,{"protocolVersion":ver,
                           "capabilities":{"tools":{"listChanged":False}},
                           "serverInfo":{"name":"engineering-guardian","version":__version__},
-                          "instructions":"Local read-only code intelligence; run guardian_scan first. Candidate CALLS edges are not exact semantics. Refuse stale snapshots."})
+                          "instructions":"Local read-only code intelligence; run guardian_scan first. Tree-sitter edges are conservative syntactic bindings, not compiler/type-checker proof. Fallback edges are heuristic. Refuse stale snapshots."})
         if method=="ping":
             return self.response(req_id,{})
         if method=="tools/list":
