@@ -134,6 +134,10 @@ class GuardianMCP:
 
 
 def main() -> None:
+    # MCP stdio is UTF-8 JSON-RPC, independent of a host OS's code page.
+    for stream in (sys.stdin, sys.stdout):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="strict")
     p=argparse.ArgumentParser(prog="guardian-mcp",description="Read-only Engineering Guardian stdio MCP server")
     p.add_argument("--root",required=True,help="Single authorized local source folder; cannot be changed by MCP tools")
     p.add_argument("--db",default=None,help="Optional SQLite cache location")

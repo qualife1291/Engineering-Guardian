@@ -3,6 +3,7 @@
 param([switch]$CheckOnly)
 
 $ErrorActionPreference = 'Stop'
+$env:PYTHONUTF8 = '1'
 . (Join-Path $PSScriptRoot 'windows_common.ps1')
 $guardianRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $python = Get-GuardianPython -GuardianRoot $guardianRoot

@@ -8,6 +8,9 @@ from .diagnostics import diagnostic_summary
 
 
 def main() -> int:
+    # JSON/Markdown over stdout must use UTF-8 even on legacy Windows code pages.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
     p=argparse.ArgumentParser(prog="guardian",description="Engineering Guardian POC v0.4 (local, read-only source indexing)")
     p.add_argument("--root",default=".",help="Authorized project folder; defaults to current directory")
     p.add_argument("--db",default=None,help="SQLite path; default is external ~/.engineering-guardian/indexes")
