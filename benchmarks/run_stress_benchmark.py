@@ -112,6 +112,14 @@ def main():
     cpu_seconds = time.process_time()-cpu_start
     if overview["symbols"] <= 0:
         raise SystemExit("Stress benchmark extracted zero symbols; parser coverage must not be accepted as a pass")
+    if coverage.get("tree_sitter_files", 0) != files:
+        raise SystemExit(
+            f"Tree-sitter parsed {coverage.get('tree_sitter_files', 0)} of {files} files; "
+            "polyglot grammar coverage is incomplete"
+        )
+    resolved_reference_count = sum(coverage.get("resolved_references", {}).values())
+    if resolved_reference_count <= 0:
+        raise SystemExit("No syntactic references resolved; the dependency graph may be blind")
     source_bytes = overview["bytes"]
     files = overview["files"]
     lines = overview["lines"]
