@@ -166,38 +166,61 @@ class UCGStore:
             )
 
 
-    def get_file_analysis(self, snapshot_id: str, path: str) -> dict | None:
-        row = self.conn.execute(
-            "SELECT parser_backend,parse_status,error_count,parser_version FROM file_analysis WHERE snapshot_id=? AND path=?",
-            (snapshot_id,path)).fetchone()
-        return ({"parser_backend":row[0],"parse_status":row[1],"error_count":row[2],"parser_version":row[3]}
-                if row else None)
-
-    def get_file_analysis_for_file(self, snapshot_id: str, path: str) -> FileAnalysisRecord | None:
-        row = self.conn.execute(
-            "SELECT path,parser_backend,parse_status,error_count,parser_version FROM file_analysis WHERE snapshot_id=? AND path=?",
-            (snapshot_id,path)).fetchone()
-        return FileAnalysisRecord(*row) if row else None
-
-    def get_imports_for_file(self, snapshot_id: str, path: str) -> list[ImportRecord]:
+    def get_file_analysis_map(self, snapshot_id: str) -> dict[str, FileAnalysisRecord]:
         rows = self.conn.execute(
-            "SELECT file_path,module_specifier,imported_name,local_name,import_kind,line,resolved_path "
-            "FROM imports WHERE snapshot_id=? AND file_path=?", (snapshot_id,path)).fetchall()
-        return [ImportRecord(*row) for row in rows]
+            "SELECT path,parser_backend,parse_status,error_count,parser_version "
+            "FROM file_analysis WHERE snapshot_id=?", (snapshot_id,)).fetchall()
+        return {row[0]: FileAnalysisRecord(*row) for row in rows}
 
-    def get_references_for_file(self, snapshot_id: str, path: str) -> list[ReferenceRecord]:
-        rows = self.conn.execute(
-            "SELECT source_id,target_name,receiver,syntax_kind,evidence_path,evidence_line,"
-            "start_byte,end_byte,resolution,target_id,confidence,reason "
-            "FROM symbol_references WHERE snapshot_id=? AND evidence_path=?", (snapshot_id,path)).fetchall()
-        return [ReferenceRecord(*row) for row in rows]
-
-    def get_symbol_analysis_for_file(self, snapshot_id: str, path: str) -> list[SymbolAnalysisRecord]:
-        rows = self.conn.execute(
-            "SELECT a.symbol_id,a.scope_name,a.signature_hash,a.body_hash,a.declaration_hash "
-            "FROM symbol_analysis a JOIN symbols s ON s.snapshot_id=a.snapshot_id AND s.symbol_id=a.symbol_id "
-            "WHERE a.snapshot_id=? AND s.file_path=?", (snapshot_id,path)).fetchall()
-        return [SymbolAnalysisRecord(*row) for row in rows]
+    def get_cached_file_data(self, snapshot_id: str, paths: list[str]) -> dict[str, dict]:
+        """Batch-load reusable per-file data; avoids per-file SQL round trips on large projects."""
+        result = {path: {"symbols": [], "call_sites": [], "imports": [],
+                         "references": [], "symbol_analysis": [], "file_analysis": None}
+                  for path in paths}
+        for offset in range(0, len(paths), 400):
+            chunk = paths[offset:offset + 400]
+            if not chunk:
+                continue
+            marks = ",".join("?" for _ in chunk)
+            args = (snapshot_id, *chunk)
+            rows = self.conn.execute(
+                "SELECT symbol_id,name,qualified_name,kind,file_path,language,start_line,end_line,signature "
+                f"FROM symbols WHERE snapshot_id=? AND file_path IN ({marks})", args).fetchall()
+            for row in rows:
+                result[row[4]]["symbols"].append(SymbolRecord(*row))
+            rows = self.conn.execute(
+                "SELECT source_id,target_name,evidence_path,evidence_line FROM call_sites "
+                f"WHERE snapshot_id=? AND evidence_path IN ({marks})", args).fetchall()
+            for row in rows:
+                result[row[2]]["call_sites"].append(tuple(row))
+            rows = self.conn.execute(
+                "SELECT file_path,module_specifier,imported_name,local_name,import_kind,line,resolved_path "
+                f"FROM imports WHERE snapshot_id=? AND file_path IN ({marks})", args).fetchall()
+            for row in rows:
+                result[row[0]]["imports"].append(ImportRecord(*row))
+            rows = self.conn.execute(
+                "SELECT source_id,target_name,receiver,syntax_kind,evidence_path,evidence_line,"
+                "start_byte,end_byte,resolution,target_id,confidence,reason FROM symbol_references "
+                f"WHERE snapshot_id=? AND evidence_path IN ({marks})", args).fetchall()
+            for row in rows:
+                result[row[4]]["references"].append(ReferenceRecord(*row))
+            rows = self.conn.execute(
+                "SELECT a.symbol_id,a.scope_name,a.signature_hash,a.body_hash,a.declaration_hash "
+                "FROM symbol_analysis a JOIN symbols s "
+                "ON s.snapshot_id=a.snapshot_id AND s.symbol_id=a.symbol_id "
+                f"WHERE a.snapshot_id=? AND s.file_path IN ({marks})", args).fetchall()
+            for row in rows:
+                symbol_id = row[0]
+                # Symbol IDs are unique within a snapshot; file prefix is used only for grouping.
+                file_path = symbol_id.split(":", 1)[0]
+                if file_path in result:
+                    result[file_path]["symbol_analysis"].append(SymbolAnalysisRecord(*row))
+            rows = self.conn.execute(
+                "SELECT path,parser_backend,parse_status,error_count,parser_version "
+                f"FROM file_analysis WHERE snapshot_id=? AND path IN ({marks})", args).fetchall()
+            for row in rows:
+                result[row[0]]["file_analysis"] = FileAnalysisRecord(*row)
+        return result
 
     def parser_coverage(self, snapshot_id: str) -> dict:
         backends = dict(self.conn.execute(
@@ -220,6 +243,60 @@ class UCGStore:
         return {row[0] for row in self.conn.execute(
             "SELECT path FROM files WHERE snapshot_id=?", (snapshot_id,)).fetchall()}
 
+    def reverse_dependents(self, snapshot_id: str, start_ids: list[str],
+                           max_depth: int = 3, max_nodes: int = 5000,
+                           max_edges: int = 20000) -> dict:
+        """Bounded multi-source reverse BFS with chunked SQL; avoids one query per changed symbol."""
+        from collections import deque
+        max_depth = max(0, min(int(max_depth), 10))
+        max_nodes = max(1, min(int(max_nodes), 50000))
+        max_edges = max(1, min(int(max_edges), 200000))
+        frontier = deque(dict.fromkeys(start_ids))
+        seen = set(frontier)
+        output = []
+        truncated = False
+        for depth in range(1, max_depth + 1):
+            if not frontier or truncated:
+                break
+            current = list(frontier)
+            frontier.clear()
+            next_nodes = []
+            for offset in range(0, len(current), 400):
+                chunk = current[offset:offset + 400]
+                if not chunk:
+                    continue
+                marks = ",".join("?" for _ in chunk)
+                remaining = max_edges - len(output)
+                if remaining <= 0:
+                    truncated = True
+                    break
+                rows = self.conn.execute(
+                    "SELECT e.target_id,e.source_id,e.relation,e.resolution,e.evidence_path,"
+                    "e.evidence_line,s.file_path,s.qualified_name,s.kind,s.start_line "
+                    "FROM edges e JOIN symbols s ON s.snapshot_id=e.snapshot_id AND s.symbol_id=e.source_id "
+                    f"WHERE e.snapshot_id=? AND e.target_id IN ({marks}) LIMIT ?",
+                    (snapshot_id, *chunk, remaining + 1)).fetchall()
+                if len(rows) > remaining:
+                    rows = rows[:remaining]
+                    truncated = True
+                for target_id, source_id, relation, resolution, path, line, file_path, qname, kind, start_line in rows:
+                    output.append({"from":target_id,"to":source_id,"relation":relation,
+                                   "resolution":resolution,"evidence_path":path,
+                                   "evidence_line":line,"depth":depth,
+                                   "file_path":file_path,"qualified_name":qname,
+                                   "kind":kind,"line":start_line})
+                    if source_id not in seen:
+                        if len(seen) >= max_nodes:
+                            truncated = True
+                        else:
+                            seen.add(source_id)
+                            next_nodes.append(source_id)
+                if truncated:
+                    break
+            frontier.extend(next_nodes)
+        return {"edges":output,"truncated":truncated,"visited_nodes":len(seen)}
+
+    # Legacy helper methods retained for existing benchmark/tests.
     # Legacy helper methods retained for existing benchmark/tests.
     def create_snapshot(self, snapshot_id: str, root: str):
         self.conn.execute("INSERT OR REPLACE INTO snapshots(snapshot_id,root_path) VALUES(?,?)", (snapshot_id, root))
@@ -264,26 +341,43 @@ class UCGStore:
         return [dict(zip(["symbol_id","name","qualified_name","kind","file_path","start_line","signature"],r)) for r in rows]
 
     def traverse(self, snapshot_id: str, symbol_id: str, direction: str = "forward",
-                 max_depth: int = 3, max_nodes: int = 1000) -> list[dict]:
+                 max_depth: int = 3, max_nodes: int = 1000,
+                 max_edges: int | None = None) -> list[dict]:
+        """Bounded BFS; visited nodes prevent cycles and SQL LIMIT bounds high fan-out."""
         if direction not in {"forward","reverse"}:
             raise ValueError("direction must be forward or reverse")
         from collections import deque
+        max_depth = max(0, min(int(max_depth), 20))
+        max_nodes = max(1, min(int(max_nodes), 50000))
+        max_edges = max_edges if max_edges is not None else max_nodes * 10
+        max_edges = max(1, min(int(max_edges), 200000))
         col = "source_id" if direction == "forward" else "target_id"
         target = "target_id" if direction == "forward" else "source_id"
         frontier = deque([(symbol_id,0)])
         seen = {symbol_id}
-        result=[]
-        while frontier and len(seen) <= max_nodes:
+        result = []
+        edge_seen = set()
+        while frontier and len(result) < max_edges:
             current, depth = frontier.popleft()
-            if depth >= max_depth: continue
+            if depth >= max_depth:
+                continue
+            remaining = max_edges - len(result)
             rows = self.conn.execute(
-                f"SELECT {target},relation,resolution,evidence_path,evidence_line FROM edges WHERE snapshot_id=? AND {col}=?",
-                (snapshot_id,current)
+                f"SELECT {target},relation,resolution,evidence_path,evidence_line "
+                f"FROM edges WHERE snapshot_id=? AND {col}=? LIMIT ?",
+                (snapshot_id,current,remaining + 1)
             ).fetchall()
+            if len(rows) > remaining:
+                rows = rows[:remaining]
             for nxt,rel,res,path,line in rows:
-                result.append({"from":current,"to":nxt,"relation":rel,"resolution":res,
-                               "evidence_path":path,"evidence_line":line,"depth":depth+1})
+                key = (current,nxt,rel,path,line)
+                if key not in edge_seen:
+                    edge_seen.add(key)
+                    result.append({"from":current,"to":nxt,"relation":rel,"resolution":res,
+                                   "evidence_path":path,"evidence_line":line,"depth":depth+1})
                 if nxt not in seen and len(seen) < max_nodes:
                     seen.add(nxt)
                     frontier.append((nxt,depth+1))
+            if len(result) >= max_edges:
+                break
         return result

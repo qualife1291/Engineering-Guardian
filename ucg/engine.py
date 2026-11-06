@@ -96,6 +96,15 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
 
         previous = store.latest_snapshot(str(root_path))
         old_hashes = store.get_file_fingerprints(previous) if previous else {}
+        old_analysis = store.get_file_analysis_map(previous) if previous else {}
+        expected_backends = {record.path: _expected_backend(record.language) for record in records}
+        reusable_paths = [
+            record.path for record in records
+            if old_hashes.get(record.path) == record.fingerprint
+            and record.path in old_analysis
+            and old_analysis[record.path].parser_backend == expected_backends[record.path]
+        ]
+        cached = store.get_cached_file_data(previous, reusable_paths) if previous and reusable_paths else {}
         all_symbols = []
         call_sites = []
         imports = []
@@ -107,21 +116,15 @@ def scan_workspace(root: str, db_path: str, snapshot_id: str | None = None):
         reused = 0
 
         for record in records:
-            expected_backend = _expected_backend(record.language)
-            old_analysis = store.get_file_analysis_for_file(previous, record.path) if previous else None
-            can_reuse = (
-                previous
-                and old_hashes.get(record.path) == record.fingerprint
-                and old_analysis is not None
-                and old_analysis.parser_backend == expected_backend
-            )
-            if can_reuse:
-                all_symbols.extend(store.get_symbols_for_file(previous, record.path))
-                call_sites.extend(store.get_call_sites_for_file(previous, record.path))
-                imports.extend(store.get_imports_for_file(previous, record.path))
-                references.extend(store.get_references_for_file(previous, record.path))
-                file_analysis.append(old_analysis)
-                symbol_analysis.extend(store.get_symbol_analysis_for_file(previous, record.path))
+            if record.path in cached:
+                item = cached[record.path]
+                all_symbols.extend(item["symbols"])
+                call_sites.extend(item["call_sites"])
+                imports.extend(item["imports"])
+                references.extend(item["references"])
+                if item["file_analysis"] is not None:
+                    file_analysis.append(item["file_analysis"])
+                symbol_analysis.extend(item["symbol_analysis"])
                 reused += 1
                 continue
 
