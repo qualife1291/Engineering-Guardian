@@ -50,3 +50,7 @@ python3 -m ucg.cli --root /path/to/app support-bundle
 - Candidate graph edges are heuristic, **not trusted impact analysis**.
 - Source file modification between scan and query yields stale error and requires a refresh.
 - Source structure is computed without Git; the integration with `claude mcp` is per workspace.
+
+## Offline v0.4 navigation path
+
+`ucg/offline.py` supplies deterministic tree/outline/hotspots/PageRank-style repo-map/diff/brief. Exposed through GuardianService, CLI and MCP, these work without AI. CLI and MCP machine output use UTF-8 on Windows and Unix. See [OFFLINE_INTELLIGENCE.md](OFFLINE_INTELLIGENCE.md).

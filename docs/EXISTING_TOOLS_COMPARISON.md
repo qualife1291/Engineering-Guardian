@@ -1,4 +1,6 @@
-# Existing Tool Comparison — Engineering Guardian POC
+# Existing Tool Comparison — Historical POC Baselines
+
+> These results predate the v0.4.0 offline navigation layer. They mix different tool startup and index states and do NOT prove a universal speed advantage. Rebenchmark on identical real repositories for developer-level metrics.
 
 ## Executive result
 

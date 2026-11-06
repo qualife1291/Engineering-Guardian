@@ -20,4 +20,4 @@
 | Bảo mật và giới hạn quyền | [SECURITY.md](../SECURITY.md) | Trust boundary |
 | Version và phát hành | [CHANGELOG.md](../CHANGELOG.md), [RELEASING.md](RELEASING.md) | Changelog + release process |
 
-**Cần nhớ:** Đây là POC Python, không có Tree-sitter/SCIP/LLM trong lõi. Candidate edges không phải dependencies đã được xác minh. Đừng suy diễn tính chính xác của graph từ tốc độ benchmark.
+**Cần nhớ:** v0.4.0 là POC Python offline-first, không có Tree-sitter/SCIP/LLM trong lõi. Candidate edges không phải dependencies đã được xác minh. Đừng suy diễn tính chính xác của graph từ tốc độ benchmark.

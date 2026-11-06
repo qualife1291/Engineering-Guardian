@@ -50,3 +50,7 @@ The exporter re-sanitizes event fields and includes `environment.json` (OS, Pyth
 ### Privacy caveats
 
 Absolute source paths, function names and source content are omitted from logs. However, file/line counts, OS type and anonymized workspace hash can reveal coarse project characteristics. If that matters, inspect locally and do not share the ZIP. Support bundles are not automatically uploaded to any service.
+
+## Shared bundle linkability
+
+From v0.4.0, exported support bundles replace internal workspace hashes with the literal `redacted`, avoiding a stable workspace fingerprint in the ZIP. Internal local JSONL diagnostics still use a hashed workspace identifier for grouping. Metrics are operational, not semantic accuracy measurements.

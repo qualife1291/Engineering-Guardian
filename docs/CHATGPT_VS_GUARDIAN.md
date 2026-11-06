@@ -1,10 +1,12 @@
-# ChatGPT vs Engineering Guardian — Fair Comparison Plan
+# ChatGPT vs Engineering Guardian — Evaluation Protocol (Not a Speed Claim)
+
+> Historical planning document: initial prototype query timings do not measure model reasoning, model latency, or current v0.4.0 end-to-end CLI/MCP performance. There is no valid overall winner from these figures.
 
 ## What can be concluded now
 
 The 100-file / 100,000-line synthetic source corpus is approximately 3.86 MB and approximately 964k tokens by a rough `characters / 4` estimate.
 
-The current UCG Python prototype cold-indexes the corpus in about 1.08 seconds in the benchmark container. After indexing, a symbol search takes about 0.29 ms median, a bounded graph query about 0.003 ms median, and a query-specific context pack about 2.63 ms median.
+The early Python prototype cold-indexed its original synthetic corpus in about 1.08 seconds in the benchmark container. The initial fixture was later replaced after validity defects were found; see the validated report. After indexing, a symbol search takes about 0.29 ms median, a bounded graph query about 0.003 ms median, and a query-specific context pack about 2.63 ms median.
 
 These are local preparation/query timings, not LLM answer timings.
 
