@@ -11,6 +11,8 @@ python3 -m ucg.cli --root tests scan
 python3 -m ucg.cli --root tests doctor
 ```
 
+On native Windows use `py -3 -m unittest discover -s tests -v`, then `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start_windows.ps1 -CheckOnly`. The GitHub Windows CI job verifies PowerShell AST syntax and Claude registration with a mocked command. Windows native and WSL2 have separate virtual environments.
+
 Keep fixture tests synthetic and secrets-free. Performance data should include machine, Python version, corpus size, cache state, repeats and known accuracy limitations.
 
 ## Design rules

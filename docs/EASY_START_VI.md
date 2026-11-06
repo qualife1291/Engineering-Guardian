@@ -1,5 +1,7 @@
 # Cài đặt và sử dụng Engineering Guardian (macOS)
 
+> Windows 10/11: dùng [hướng dẫn Windows / PowerShell / WSL2](WINDOWS_SETUP_VI.md), không chạy file `.command` trên Windows.
+
 ## Yêu cầu
 
 - macOS Intel hoặc Apple Silicon (M1/M2/M3/M4).

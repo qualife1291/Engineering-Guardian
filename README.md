@@ -6,7 +6,17 @@
 
 [Changelog](CHANGELOG.md) · [Tiếng Việt: bắt đầu nhanh](docs/EASY_START_VI.md) · [Claude Code MCP](docs/CLAUDE_CODE.md) · [Ví dụ sử dụng](docs/USAGE_EXAMPLES_VI.md) · [Đọc nhanh cho AI](AGENTS.md)
 
-## Start in 2 minutes (macOS)
+## Quick start by operating system
+
+| System | One-click menu | Claude Code MCP guide |
+|---|---|---|
+| macOS / Apple Silicon | `Start Engineering Guardian.command` | [Claude Code](docs/CLAUDE_CODE.md) |
+| **Windows 10/11 native** | **`Start Engineering Guardian.cmd`** | **[Windows / PowerShell setup](docs/WINDOWS_SETUP_VI.md)** |
+| Linux / WSL2 | Python CLI or Bash launcher | [Claude Code](docs/CLAUDE_CODE.md) |
+
+Guardian itself needs **Python 3.11+**, no Rust, Docker or model API key for scanning. Git is optional when extracting a downloaded ZIP. Python environments for native Windows and WSL2 are separate.
+
+### macOS (2-minute setup)
 
 Clone the repository or extract the ZIP, then open the project:
 
@@ -27,6 +37,22 @@ claude                         # /mcp → engineering-guardian
 ```
 
 The connector requests confirmation and registers a **project-local** MCP server. It never executes source code. Claude Code's other tools and permissions remain independent from Guardian's source-read-only scope.
+
+### Windows 10/11 native (PowerShell)
+
+Download/clone this repository, then **double-click `Start Engineering Guardian.cmd`** to use the Terminal menu. The launcher creates an isolated local `.venv` with no external Python dependencies.
+
+To connect Claude Code from PowerShell (replace the sample paths):
+
+```powershell
+cd 'D:\\Dev\\Engineering-Guardian'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\connect_claude.ps1 -ProjectPath 'D:\\Dev\\airvoice-wireless-app'
+cd 'D:\\Dev\\airvoice-wireless-app'
+claude
+# In Claude Code: /mcp
+```
+
+See the [step-by-step Windows guide](docs/WINDOWS_SETUP_VI.md) for Python, Windows native vs WSL2, paths with spaces, caching on a second disk, diagnostics and troubleshooting.
 
 **Option C — CLI and automation:**
 
@@ -86,8 +112,10 @@ Run `python3 -m ucg.cli --root PROJECT support-bundle` (or Claude's `guardian_su
 
 ## Documentation map
 
-- **AI agents:** [AGENTS.md](AGENTS.md) → [PROJECT_MAP.md](docs/PROJECT_MAP.md) → relevant code only. This minimizes onboarding tokens.
-- **User guides:** [macOS easy start](docs/EASY_START_VI.md), [Claude Code](docs/CLAUDE_CODE.md), [use cases](docs/USAGE_EXAMPLES_VI.md).
+- **AI agents:** [AGENTS.md](AGENTS.md) → [PROJECT_MAP.md](docs/PROJECT_MAP.md) → relevant code only.
+- **Contributors:** [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for OS-specific setup and quality gates. This minimizes onboarding tokens.
+- **Documentation index:** [DOCS_INDEX.md](docs/DOCS_INDEX.md) — open only the guide you need.
+- **User guides:** [Windows native / WSL2](docs/WINDOWS_SETUP_VI.md), [macOS easy start](docs/EASY_START_VI.md), [Claude Code](docs/CLAUDE_CODE.md), [use cases](docs/USAGE_EXAMPLES_VI.md).
 - **Design/quality:** [architecture](docs/ARCHITECTURE.md), [test strategy](docs/TESTING.md), [acceptance](docs/ACCEPTANCE.md), [benchmarks](docs/BENCHMARK.md).
 - **Operations:** [diagnostic logging](docs/DIAGNOSTICS.md), [security](SECURITY.md), [contributing](CONTRIBUTING.md), [releasing](docs/RELEASING.md), [changelog](CHANGELOG.md).
 

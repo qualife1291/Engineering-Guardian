@@ -10,7 +10,7 @@ benchmark: fixture
 	python3 -m benchmarks.run_benchmark --source ./.benchmark/complex-100 --output reports/benchmark-100-files-1000-lines.json --runs 5
 
 smoke: fixture
-	python3 -m ucg.cli scan ./.benchmark/complex-100 --db ./.benchmark/smoke.sqlite
+	python3 -m ucg.cli --root ./.benchmark/complex-100 --db ./.benchmark/smoke.sqlite scan
 
 clean:
 	rm -rf .benchmark .guardian __pycache__ ucg/__pycache__ benchmarks/__pycache__ tests/__pycache__

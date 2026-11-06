@@ -9,6 +9,23 @@ All notable **released** changes to Engineering Guardian are recorded here, foll
 - Cross-language MethodChannel, HTTP, SQL and event contract resolution.
 - Change X-Ray UI, source-linked diagrams and CI benchmark regression gates.
 
+## [0.3.1] - 2026-11-06
+
+### Added
+- Windows 10/11 native PowerShell bootstrap and project-scoped Claude Code connector (`scripts/connect_claude.ps1`).
+- One-click Windows command launcher (`Start Engineering Guardian.cmd`) and offline `.venv` setup, with no global Python package modifications.
+- Windows/WSL2 installation and troubleshooting guide, documentation index and developer maintenance map.
+- Windows GitHub Actions validation: Python tests, PowerShell syntax, startup smoke and mocked Claude registration, including paths with spaces.
+
+### Fixed
+- Interactive menu now preserves Windows backslashes and accepts quoted project paths; POSIX drag-and-drop escaped spaces still work.
+- Corrected `Makefile smoke` CLI argument order.
+- README, agent onboarding, security and diagnostic guides now distinguish Windows native, WSL2 and macOS.
+
+### Limitations
+- Native Windows test and release are validated by CI; no native Windows device was accessed by the assistant.
+- Graph edges for non-Python languages remain heuristic candidates; no Tree-sitter/SCIP added in this patch.
+
 ## [0.3.0] - 2026-11-06
 
 ### Added
