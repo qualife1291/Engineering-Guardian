@@ -40,6 +40,15 @@ class TreeSitterRuntimeApiTests(unittest.TestCase):
             "child_count": str(getattr(root, "child_count", None)),
         })
         self.assertTrue(named or children)
+        first = (named or children or [None])[0]
+        from ucg.treesitter import _kind, _children, _name_node, _declaration
+        print("TREE_SITTER_CHILD_DEBUG", {
+            "first_repr": repr(first),
+            "first_type": _kind(first) if first is not None else None,
+            "first_named_types": [_kind(x) for x in _children(first)] if first is not None else None,
+            "first_name": _kind(_name_node(first)) if first is not None and _name_node(first) is not None else None,
+            "first_decl": _declaration(first, "python", []) if first is not None else None,
+        })
 
 
 @unittest.skipUnless(parser_available("python"), "Tree-sitter Python grammar is not installed")
