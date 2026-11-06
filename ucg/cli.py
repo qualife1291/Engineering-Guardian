@@ -50,6 +50,16 @@ def main() -> int:
     short.add_argument("--focus",default="")
     short.add_argument("--max-chars",type=int,default=6000)
     short.add_argument("--format",choices=["json","markdown"],default="json")
+    impact=sub.add_parser("impact",help="Run offline Change X-Ray from two indexed snapshots")
+    impact.add_argument("--base",default=None)
+    impact.add_argument("--head",default=None)
+    impact.add_argument("--depth",type=int,default=3)
+    impact.add_argument("--limit",type=int,default=100)
+    parsers=sub.add_parser("parsers",help="Inspect or explicitly install Tree-sitter grammars")
+    parser_sub=parsers.add_subparsers(dest="parser_command",required=True)
+    parser_sub.add_parser("status",help="Show installed parser grammars; never accesses network")
+    install=parser_sub.add_parser("install",help="Explicitly download grammar binaries into local cache")
+    install.add_argument("--languages",default="python,typescript,javascript,dart,kotlin,java,sql,go,rust")
     sub.add_parser("support-bundle",help="Export privacy-filtered diagnostic ZIP to share for upgrades")
     sub.add_parser("log-summary",help="Aggregate anonymous quality/performance diagnostic metrics")
     sub.add_parser("doctor",help="Inspect local environment and index health")
@@ -69,6 +79,15 @@ def main() -> int:
         elif args.command=="repo-map":result=service.repo_map(args.focus,args.max_chars,args.limit)
         elif args.command=="diff":result=service.diff(args.base,args.head,args.limit)
         elif args.command=="brief":result=service.brief(args.focus,args.max_chars)
+        elif args.command=="impact":result=service.change_impact(args.base,args.head,args.depth,args.limit)
+        elif args.command=="parsers":
+            if args.parser_command=="status":
+                result=service.parser_status()
+            elif args.parser_command=="install":
+                languages=[x.strip() for x in args.languages.split(",") if x.strip()]
+                result=service.install_parsers(languages)
+            else:
+                raise AssertionError("unexpected parser command")
         elif args.command=="support-bundle":result=service.support_log()
         elif args.command=="log-summary":result=diagnostic_summary(service.root)
         elif args.command=="doctor":
@@ -76,7 +95,7 @@ def main() -> int:
             result={"guardian_version":__version__,"python_version":sys.version.split()[0],
                     "read_only_source":True,"mcp":"stdio, JSON-RPC 2.0, no external packages",
                     "current_status":service.status(),
-                    "parser_limitation":"Python AST; other languages heuristic (not Tree-sitter/SCIP)",
+                    "parser_limitation":"Tree-sitter when an optional grammar is installed; Python AST/regex fallback otherwise. No compiler/type-checker proof.",
                     "diagnostic_bundle_command":"python -m ucg.cli --root <project> support-bundle"}
         else:raise AssertionError("unexpected command")
         if args.command=="repo-map" and args.text: print(result["text"],end="")
