@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "engineering-guardian-ucg-poc"
+version = "0.3.0"
+description = "Local-first versioned Unified Code Graph, MCP for Claude Code and safe diagnostic logs"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+guardian = "ucg.cli:main"
+guardian-mcp = "ucg.mcp:main"
+ucg = "ucg.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ucg*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

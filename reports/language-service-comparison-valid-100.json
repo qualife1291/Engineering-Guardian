@@ -1,0 +1,189 @@
+{
+  "benchmark": "Language-native references vs Guardian reverse graph",
+  "fixture": {
+    "source_files": 100,
+    "lines_per_file": 1000,
+    "total_lines": 100000,
+    "languages": [
+      "Python",
+      "TypeScript",
+      "Kotlin",
+      "Dart",
+      "SQL"
+    ]
+  },
+  "python": {
+    "jedi": {
+      "tool": "Jedi",
+      "version": "0.20.0",
+      "project_root": "/mnt/data/engineering-guardian/.benchmark/valid-100",
+      "symbol": "normalize_python_075_10",
+      "cold_first_query_ms": 691.57354999993,
+      "warm_query_median_ms": 13.296366999952625,
+      "warm_query_p95_ms": 17.97846399995251,
+      "warm_runs": 100,
+      "reference_count_including_definition": 6,
+      "references": [
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 140,
+          "column": 4
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 231,
+          "column": 17
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 321,
+          "column": 17
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 411,
+          "column": 17
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 501,
+          "column": 17
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_02/layer_01/module_07/python_075.py",
+          "line": 591,
+          "column": 17
+        }
+      ]
+    },
+    "guardian": {
+      "symbol": "normalize_python_075_10",
+      "warm_query_median_ms": 0.0091585,
+      "warm_query_p95_ms": 0.013731,
+      "warm_runs": 100,
+      "reference_edge_count_excluding_definition": 5,
+      "references": [
+        {
+          "file": "domain_02/layer_01/module_07/python_075.py",
+          "line": 231
+        },
+        {
+          "file": "domain_02/layer_01/module_07/python_075.py",
+          "line": 321
+        },
+        {
+          "file": "domain_02/layer_01/module_07/python_075.py",
+          "line": 411
+        },
+        {
+          "file": "domain_02/layer_01/module_07/python_075.py",
+          "line": 501
+        },
+        {
+          "file": "domain_02/layer_01/module_07/python_075.py",
+          "line": 591
+        }
+      ],
+      "resolution": "ast_candidate; heuristic, not compiler verified"
+    }
+  },
+  "typescript": {
+    "typescript_language_service": {
+      "tool": "TypeScript Language Service",
+      "version": "5.8.3",
+      "source_files": 20,
+      "symbol": "normalize_typescript_016_10",
+      "cold_first_query_ms": 584.516087,
+      "warm_query_median_ms": 0.427412,
+      "warm_query_p95_ms": 1.168799,
+      "warm_runs": 100,
+      "reference_count_including_definition": 8,
+      "references": [
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 77,
+          "isDefinition": true
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 134,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 194,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 254,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 314,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 374,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 434,
+          "isDefinition": false
+        },
+        {
+          "file": "/mnt/data/engineering-guardian/.benchmark/valid-100/domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 494,
+          "isDefinition": false
+        }
+      ]
+    },
+    "guardian": {
+      "symbol": "normalize_typescript_016_10",
+      "warm_query_median_ms": 0.011532,
+      "warm_query_p95_ms": 0.090634,
+      "warm_runs": 100,
+      "reference_edge_count_excluding_definition": 7,
+      "references": [
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 134
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 194
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 254
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 314
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 374
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 434
+        },
+        {
+          "file": "domain_01/layer_00/module_01/typescript_016.ts",
+          "line": 494
+        }
+      ],
+      "resolution": "ast_candidate; heuristic, not compiler verified"
+    }
+  },
+  "fairness_notes": [
+    "Each language-native tool only analyzes its own language subset; this is not a 100-file all-language comparison.",
+    "Cold first-query times include language-service initialization and are not directly comparable with Guardian cold indexing of all five languages.",
+    "Warm query results are for same-file synthetic references; cross-module and dynamic dispatch accuracy require separate real-project tests.",
+    "Guardian edges are heuristic candidates and must be verified before claiming semantic equivalence."
+  ]
+}

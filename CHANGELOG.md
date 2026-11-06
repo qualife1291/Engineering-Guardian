@@ -1,0 +1,49 @@
+# Changelog
+
+All notable **released** changes to Engineering Guardian are recorded here, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/). Dates use `YYYY-MM-DD` (UTC). Runtime diagnostics belong in `~/.engineering-guardian/diagnostics/`, **not** in this file.
+
+## [Unreleased]
+
+### Planned (not implemented)
+- Tree-sitter and SCIP/LSP precise semantic indexing for multiple languages.
+- Cross-language MethodChannel, HTTP, SQL and event contract resolution.
+- Change X-Ray UI, source-linked diagrams and CI benchmark regression gates.
+
+## [0.3.0] - 2026-11-06
+
+### Added
+- Read-only-source Claude Code MCP server over stdio (`guardian-mcp`), fixed to one authorized workspace.
+- Developer CLI (`guardian`) for scan, freshness status, overview, symbol search, candidate callers/callees and bounded context.
+- Versioned, content-addressed SQLite snapshots and incremental reuse of unchanged file parsing.
+- Diagnostic JSONL session logs, aggregate `log-summary` and sanitized support ZIP for troubleshooting and performance analysis.
+- Self-checks, security regression tests, GitHub Actions CI, and macOS easy-start launcher.
+- `AGENTS.md`, `CLAUDE.md`, architecture/operations guides, contribution and security policies for fast agent onboarding.
+
+### Fixed
+- Repeated scans of unchanged workspaces reuse the same snapshot rather than creating duplicates.
+- Source context fails closed when on-disk content differs from the indexed snapshot.
+- Partial or changed source during a scan does not commit an inconsistent snapshot.
+- Sensitive files and symlink paths are excluded from normal scanner traversal.
+
+### Known limitations
+- The prototype uses Python AST for Python; other languages use heuristic extraction, not Tree-sitter or compiler-grade semantics.
+- `CALLS` relationships are **candidates** and must never be treated as verified cross-language dependencies.
+- Index is manually refreshed (not a filesystem watcher); fresh-check currently hashes the source inventory on queries.
+- Documentation generation, deterministic impact analysis, SCIP importer and graphical UI are not implemented.
+
+## [0.2.0] - 2026-11-06
+
+### Added
+- 100-file / 100,000-line multi-language fixture generation, validation and reproducible benchmarks.
+- Comparative scripts for `ripgrep`, `git grep`, Jedi and TypeScript Language Service (only where installed).
+- SQLite exact-name symbol search and synthetic cross-file call candidate smoke tests.
+
+## [0.1.0] - 2026-11-06
+
+### Added
+- Local-folder source discovery without Git, basic parser, SQLite UCG graph and basic CLI.
+- Initial architecture, acceptance criteria, benchmark documentation and tests.
+
+---
+
+**Release rule:** Put unshipped changes under `[Unreleased]`, then move them to a dated version entry when published; keep code version (`ucg/__init__.py` and `pyproject.toml`) aligned. Never write runtime logs into `CHANGELOG.md`.

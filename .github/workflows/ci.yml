@@ -1,0 +1,48 @@
+name: Engineering Guardian CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile (no dependency installation)
+        run: python -m compileall -q ucg scripts benchmarks tests
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: CLI self-check
+        run: |
+          python -m ucg.cli --root . status
+          python -m ucg.cli --root ./tests scan
+          python -m ucg.cli --root ./tests overview
+      - name: Check version and documentation consistency
+        run: |
+          python - <<'PY'
+          import pathlib, tomllib
+          from ucg import __version__
+          pkg = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
+          assert pkg['project']['version'] == __version__
+          assert f'## [{__version__}]' in pathlib.Path('CHANGELOG.md').read_text()
+          for name in ('AGENTS.md','CLAUDE.md','SECURITY.md','CONTRIBUTING.md','docs/CLAUDE_CODE.md','docs/DIAGNOSTICS.md'):
+              assert pathlib.Path(name).is_file(), name
+          print('Version and docs OK')
+          PY
+      - name: Smoke support log
+        run: |
+          python -m ucg.cli --root ./tests log-summary > /tmp/guardian-summary.json
+          python -m ucg.cli --root ./tests support-bundle > /tmp/guardian-bundle.json
+      - name: Verify sensitive files excluded
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)"

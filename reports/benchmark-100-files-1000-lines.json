@@ -1,0 +1,74 @@
+{
+  "benchmark": "100-file / 100k-line source understanding preparation benchmark",
+  "dataset": {
+    "root": "/mnt/data/engineering-guardian/.benchmark/complex-100",
+    "source_files": 100,
+    "source_lines": 100000,
+    "languages": {
+      "typescript": 20,
+      "sql": 20,
+      "python": 20,
+      "kotlin": 20,
+      "dart": 20
+    }
+  },
+  "chatgpt_full_context_baseline": {
+    "read_seconds_median": 0.007995381000000634,
+    "payload_files": 100,
+    "payload_lines": 100000,
+    "payload_bytes": 3855959,
+    "approx_tokens_char_div_4": 963990,
+    "status": "input preparation measured; actual ChatGPT inference latency and correctness were not measured"
+  },
+  "engineering_guardian_python_poc": {
+    "cold_index_seconds_median": 1.0839079780000702,
+    "cold_index_seconds_runs": [
+      1.0839079780000702,
+      1.0886541759999773,
+      1.0493301489999567,
+      1.0150242959999787,
+      1.0873253830000067
+    ],
+    "symbol_search_ms_median": 0.2881610000144974,
+    "symbol_search_ms_p95": 0.4608910001024924,
+    "graph_query_ms_median": 0.0032240000109595712,
+    "graph_query_ms_p95": 0.0052980000191382715,
+    "context_pack_ms_median": 2.6314460000094186,
+    "context_pack_ms_p95": 3.433026000038808,
+    "context_pack_estimated_tokens_median": 7716.0,
+    "last_stage_timings_seconds": {
+      "scan": 0.011253548000013325,
+      "parse_and_symbols": 0.39393075899999985,
+      "candidate_graph": 0.49462112900005195,
+      "persist": 0.1838880479999716,
+      "total": 1.0836934840000367
+    },
+    "overview": {
+      "files": 100,
+      "lines": 100000,
+      "bytes": 3855860,
+      "symbols": 9240,
+      "edges": 12060,
+      "languages": {
+        "typescript": 20,
+        "sql": 20,
+        "python": 20,
+        "kotlin": 20,
+        "dart": 20
+      }
+    },
+    "process_peak_rss_kb": 121032,
+    "implementation": "dependency-free Python prototype; not the planned Rust/Tree-sitter/SCIP engine"
+  },
+  "comparison": {
+    "finding": "The prototype prepares a searchable local index in seconds for this synthetic fixture, while a full-context workflow must ingest approximately the entire source payload. This does not prove the prototype is faster than ChatGPT end-to-end because actual model inference, upload and answer latency were not run here.",
+    "fair_test_required": "Run identical questions against (A) ChatGPT supplied with all source and (B) UCG context-pack retrieval; score wall-clock time, time-to-first-useful-answer, answer correctness, impact recall and input tokens over at least five runs."
+  },
+  "limitations": [
+    "Non-Python extraction uses regex/brace heuristics, not Tree-sitter.",
+    "Edges are AST/name candidates, not compiler-verified call edges.",
+    "SCIP and cross-language contract resolution are not implemented.",
+    "Incremental re-indexing is not implemented; repeated cold scans were measured.",
+    "Character/4 is a rough token estimate, not an exact tokenizer count."
+  ]
+}

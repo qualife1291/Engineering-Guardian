@@ -1,0 +1,247 @@
+{
+  "benchmark": "existing local code tools vs Engineering Guardian on valid synthetic fixture",
+  "fixture": {
+    "source_files": 100,
+    "lines_per_file": 1000,
+    "source_lines": 100000,
+    "languages": {
+      "python": 20,
+      "typescript": 20,
+      "kotlin": 20,
+      "dart": 20,
+      "sql": 20
+    },
+    "syntax_validation": {
+      "python_ast": "pass",
+      "typescript_tsc": "pass",
+      "kotlin_compiler": "pass",
+      "sqlite_sql": "pass",
+      "dart": "not validated (SDK unavailable)"
+    }
+  },
+  "environment": {
+    "ripgrep": "ripgrep 14.1.1",
+    "git": "git version 2.47.3",
+    "python": "3.13.5",
+    "tsc": "Version 5.8.3",
+    "kotlinc": "info: kotlinc-jvm 1.9.0 (JRE 21.0.12.1+1-1-deb13u1-Debian)"
+  },
+  "query": {
+    "unique_symbol": "python_075_operation_9",
+    "call_reference": "normalize_python_075_10(",
+    "runs_per_external_command": 25
+  },
+  "inventory": {
+    "ripgrep_rg_files": {
+      "median_ms": 4.021766999812826,
+      "p95_ms": 5.38401799985877,
+      "runs": 25,
+      "output_lines": 100,
+      "sample": [
+        "domain_02/layer_01/module_07/dart_078.dart",
+        "domain_02/layer_01/module_07/sql_074.sql",
+        "domain_02/layer_01/module_07/python_075.py"
+      ]
+    },
+    "git_ls_files": {
+      "median_ms": 1.4059589998396405,
+      "p95_ms": 1.9954009999310074,
+      "runs": 25,
+      "output_lines": 100,
+      "sample": [
+        "domain_00/layer_00/module_00/dart_003.dart",
+        "domain_00/layer_00/module_00/dart_008.dart",
+        "domain_00/layer_00/module_00/kotlin_002.kt"
+      ]
+    },
+    "find": {
+      "median_ms": 7.157315000313247,
+      "p95_ms": 14.091876000293269,
+      "runs": 25,
+      "output_lines": 100,
+      "sample": [
+        "./domain_00/layer_00/module_00/dart_003.dart",
+        "./domain_00/layer_00/module_00/dart_008.dart",
+        "./domain_00/layer_00/module_00/kotlin_002.kt"
+      ]
+    }
+  },
+  "literal_symbol_search": {
+    "ripgrep": {
+      "median_ms": 6.687019999844779,
+      "p95_ms": 9.453886999835959,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "./domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "git_grep_worktree": {
+      "median_ms": 2.932847000010952,
+      "p95_ms": 8.559068000067782,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "git_grep_cached_index": {
+      "median_ms": 7.199617999958718,
+      "p95_ms": 8.47270100030073,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "git_grep_no_index_static_folder_outside_git": {
+      "median_ms": 2.8986120000809024,
+      "p95_ms": 3.799729000093066,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "engineering-guardian-static-valid-100/domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "ripgrep_static_folder_outside_git": {
+      "median_ms": 5.880161999812117,
+      "p95_ms": 6.596720999823447,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "engineering-guardian-static-valid-100/domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "gnu_grep_recursive": {
+      "median_ms": 3.4449449999556236,
+      "p95_ms": 4.038432000015746,
+      "runs": 25,
+      "output_lines": 1,
+      "sample": [
+        "./domain_02/layer_01/module_07/python_075.py:227:def python_075_operation_9(payload: Any, context: dict | None = None) -> dict:"
+      ]
+    },
+    "guardian_sql_search": {
+      "median_ms": 0.004857000021729618,
+      "p95_ms": 0.006930999916221481,
+      "runs": 100,
+      "result_count": 1,
+      "first_result": {
+        "symbol_id": "domain_02/layer_01/module_07/python_075.py:python_075_operation_9:227",
+        "name": "python_075_operation_9",
+        "qualified_name": "python_075_operation_9",
+        "kind": "function",
+        "file_path": "domain_02/layer_01/module_07/python_075.py",
+        "start_line": 227,
+        "signature": "python_075_operation_9(payload, context)"
+      }
+    }
+  },
+  "call_reference_search": {
+    "ripgrep": {
+      "median_ms": 5.877221999980975,
+      "p95_ms": 7.744262999949569,
+      "runs": 25,
+      "output_lines": 6,
+      "sample": [
+        "./domain_02/layer_01/module_07/python_075.py:140:def normalize_python_075_10(value: Any) -> Any:",
+        "./domain_02/layer_01/module_07/python_075.py:231:    normalized = normalize_python_075_10(payload)",
+        "./domain_02/layer_01/module_07/python_075.py:321:    normalized = normalize_python_075_10(payload)"
+      ]
+    },
+    "git_grep_worktree": {
+      "median_ms": 3.113084000233357,
+      "p95_ms": 6.151006999971287,
+      "runs": 25,
+      "output_lines": 6,
+      "sample": [
+        "domain_02/layer_01/module_07/python_075.py:140:def normalize_python_075_10(value: Any) -> Any:",
+        "domain_02/layer_01/module_07/python_075.py:231:    normalized = normalize_python_075_10(payload)",
+        "domain_02/layer_01/module_07/python_075.py:321:    normalized = normalize_python_075_10(payload)"
+      ]
+    },
+    "guardian_graph_traverse": {
+      "median_ms": 0.015572999927826459,
+      "p95_ms": 0.02230299969596672,
+      "runs": 100,
+      "edge_count": 3,
+      "edges": [
+        {
+          "from": "domain_02/layer_01/module_07/python_075.py:python_075_operation_9:227",
+          "to": "domain_02/layer_01/module_07/python_075.py:normalize_python_075_10:140",
+          "relation": "CALLS",
+          "resolution": "ast_candidate",
+          "evidence_path": "domain_02/layer_01/module_07/python_075.py",
+          "evidence_line": 231,
+          "depth": 1
+        },
+        {
+          "from": "domain_02/layer_01/module_07/python_075.py:python_075_operation_9:227",
+          "to": "domain_02/layer_01/module_07/python_075.py:validate_python_075_10:147",
+          "relation": "CALLS",
+          "resolution": "ast_candidate",
+          "evidence_path": "domain_02/layer_01/module_07/python_075.py",
+          "evidence_line": 232,
+          "depth": 1
+        },
+        {
+          "from": "domain_02/layer_01/module_07/python_075.py:python_075_operation_9:227",
+          "to": "domain_02/layer_01/module_07/python_075.py:persist_python_075_10:150",
+          "relation": "CALLS",
+          "resolution": "ast_candidate",
+          "evidence_path": "domain_02/layer_01/module_07/python_075.py",
+          "evidence_line": 234,
+          "depth": 1
+        }
+      ]
+    }
+  },
+  "guardian": {
+    "cold_index_ms_runs": [
+      1143.6967130002813,
+      1034.5419900004345,
+      1070.1834060000692,
+      1340.0512729999718,
+      1299.6942940003464
+    ],
+    "cold_index_ms_median": 1143.6967130002813,
+    "overview": {
+      "files": 100,
+      "lines": 100000,
+      "bytes": 4027860,
+      "symbols": 9140,
+      "edges": 17000,
+      "languages": {
+        "typescript": 20,
+        "sql": 20,
+        "python": 20,
+        "kotlin": 20,
+        "dart": 20
+      }
+    },
+    "timings_seconds": {
+      "scan": 0.0242216719998396,
+      "parse_and_symbols": 0.40037632600024153,
+      "candidate_graph": 0.5286435799998799,
+      "persist": 0.3411096230001931,
+      "total": 1.294351201000154
+    },
+    "context_pack_ms_median": 0.42977600014637574,
+    "context_pack_ms_p95": 2.5264859996241285,
+    "context_pack_estimated_tokens": 555,
+    "context_pack_chars": 2217,
+    "context_pack_source_snippet_characters": 1789
+  },
+  "tools_not_installed": {
+    "universal_ctags": "not installed",
+    "tree_sitter_cli_and_python_bindings": "not installed",
+    "scip_indexers": "not installed",
+    "semgrep": "not installed",
+    "ast_grep": "not installed"
+  },
+  "interpretation": [
+    "ripgrep and git grep are literal text-search tools; they do not provide compiler-accurate call graphs or impact closure.",
+    "Guardian adds a persisted symbol inventory, candidate call edges and query-specific context packing, but its current cross-language edges are heuristic and must not be treated as precise navigation.",
+    "This is a synthetic fixture benchmark; it does not measure real-repository correctness or end-to-end LLM answer time."
+  ]
+}
