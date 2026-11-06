@@ -247,3 +247,162 @@ def brief(overview: dict, filesystem: dict, hot: dict, mapping: dict) -> str:
                   "- Long files are not automatically low quality; no doc/formatting audit is implied.",
                   "- No runtime impact or semantic equivalence guarantee.",""])
     return "\n".join(lines)
+
+
+def _is_test_path(path: str) -> bool:
+    parts = set(PurePosixPath(path).parts)
+    name = PurePosixPath(path).name.lower()
+    return bool(parts & {"test", "tests", "__tests__", "spec"}) or (
+        name.startswith("test_") or name.endswith("_test.py")
+        or ".test." in name or ".spec." in name
+    )
+
+
+def change_impact(store: UCGStore, root: str, base: str | None = None,
+                  head: str | None = None, depth: int = 3, limit: int = 100) -> dict:
+    """Conservative change impact from changed symbol fingerprints and reverse graph edges."""
+    _limit(depth, "depth", 1, 5)
+    _limit(limit, "limit", 1, 500)
+    comparison = diff(store, root, base, head, limit=limit)
+    if comparison["status"] != "compared":
+        return {**comparison, "impact_status": "insufficient_history",
+                "notice": "Run a second scan after a source change to build a comparable snapshot."}
+    base_id = comparison["base_snapshot"]
+    head_id = comparison["head_snapshot"]
+
+    def symbol_rows(snapshot):
+        rows = store.conn.execute(
+            "SELECT s.symbol_id,s.file_path,s.qualified_name,s.kind,s.start_line,s.signature,"
+            "COALESCE(a.scope_name,''),COALESCE(a.signature_hash,''),COALESCE(a.body_hash,''),"
+            "COALESCE(a.declaration_hash,''),COALESCE(f.parser_backend,'unknown') "
+            "FROM symbols s LEFT JOIN symbol_analysis a "
+            "ON a.snapshot_id=s.snapshot_id AND a.symbol_id=s.symbol_id "
+            "LEFT JOIN file_analysis f ON f.snapshot_id=s.snapshot_id AND f.path=s.file_path "
+            "WHERE s.snapshot_id=?", (snapshot,)
+        ).fetchall()
+        result = {}
+        for row in rows:
+            key = (row[1], row[2], row[3])
+            result[key] = {
+                "symbol_id": row[0], "file_path": row[1], "qualified_name": row[2],
+                "kind": row[3], "line": row[4], "signature": row[5],
+                "scope_name": row[6], "signature_hash": row[7],
+                "body_hash": row[8], "declaration_hash": row[9], "parser_backend": row[10],
+            }
+        return result
+
+    old, new = symbol_rows(base_id), symbol_rows(head_id)
+    changes = []
+    changed_head_ids = []
+    changed_base_ids = []
+    changed_names = set()
+    for key in sorted(new.keys() - old.keys()):
+        item = dict(new[key]); item["change"] = "added"
+        changes.append(item); changed_head_ids.append(item["symbol_id"])
+        changed_names.add(item["qualified_name"].split(".")[-1])
+    for key in sorted(old.keys() - new.keys()):
+        item = dict(old[key]); item["change"] = "deleted"
+        changes.append(item); changed_base_ids.append(item["symbol_id"])
+        changed_names.add(item["qualified_name"].split(".")[-1])
+    for key in sorted(new.keys() & old.keys()):
+        before, after = old[key], new[key]
+        if before["signature_hash"] and after["signature_hash"] and before["signature_hash"] != after["signature_hash"]:
+            item = dict(after); item["change"] = "signature_changed"
+            changes.append(item); changed_head_ids.append(item["symbol_id"])
+            changed_base_ids.append(before["symbol_id"])
+            changed_names.add(item["qualified_name"].split(".")[-1])
+        elif before["body_hash"] and after["body_hash"] and before["body_hash"] != after["body_hash"]:
+            item = dict(after); item["change"] = "body_changed"
+            changes.append(item); changed_head_ids.append(item["symbol_id"])
+            changed_base_ids.append(before["symbol_id"])
+            changed_names.add(item["qualified_name"].split(".")[-1])
+
+    # If symbol metadata is missing (legacy/partial snapshot), conservatively surface
+    # every symbol in a modified file instead of pretending there is no impact.
+    modified_files = set(comparison["modified_files"] + comparison["added_files"] + comparison["deleted_files"])
+    if not changes and modified_files:
+        for key, item in new.items():
+            if item["file_path"] in modified_files:
+                value = dict(item); value["change"] = "file_changed_symbol_unclassified"
+                changes.append(value); changed_head_ids.append(item["symbol_id"])
+                changed_names.add(item["qualified_name"].split(".")[-1])
+
+    direct = {}
+    transitive = {}
+    traversed_edges = []
+    for snapshot, ids in ((head_id, changed_head_ids), (base_id, changed_base_ids)):
+        for symbol_id in ids:
+            for edge in store.traverse(snapshot, symbol_id, "reverse", depth, max_nodes=500):
+                traversed_edges.append(edge)
+                caller_id = edge["to"]
+                row = store.conn.execute(
+                    "SELECT s.file_path,s.qualified_name,s.kind,s.start_line "
+                    "FROM symbols s WHERE s.snapshot_id=? AND s.symbol_id=?",
+                    (snapshot, caller_id)).fetchone()
+                if not row:
+                    continue
+                value = {"symbol_id": caller_id, "file_path": row[0], "qualified_name": row[1],
+                         "kind": row[2], "line": row[3], "depth": edge["depth"],
+                         "resolution": edge["resolution"], "evidence_path": edge["evidence_path"],
+                         "evidence_line": edge["evidence_line"]}
+                target = direct if edge["depth"] == 1 else transitive
+                key = (row[0], row[1], row[2])
+                previous = target.get(key)
+                if previous is None or value["depth"] < previous["depth"]:
+                    target[key] = value
+
+    changed_paths = set(comparison["added_files"] + comparison["modified_files"] + comparison["deleted_files"])
+    affected_tests = set()
+    for snapshot in (head_id, base_id):
+        if changed_paths:
+            placeholders = ",".join("?" for _ in changed_paths)
+            rows = store.conn.execute(
+                "SELECT DISTINCT file_path FROM imports WHERE snapshot_id=? AND resolved_path IN (" + placeholders + ")",
+                (snapshot, *sorted(changed_paths))).fetchall()
+            affected_tests.update(path for (path,) in rows if _is_test_path(path))
+    for item in list(direct.values()) + list(transitive.values()):
+        if _is_test_path(item["file_path"]):
+            affected_tests.add(item["file_path"])
+
+    unresolved = []
+    for snapshot in (head_id, base_id):
+        for name in sorted(changed_names):
+            rows = store.conn.execute(
+                "SELECT evidence_path,evidence_line,target_name,reason FROM symbol_references "
+                "WHERE snapshot_id=? AND target_name=? AND target_id=''",
+                (snapshot, name)).fetchall()
+            unresolved.extend({"file_path": r[0], "line": r[1], "target_name": r[2],
+                               "reason": r[3] or "Unresolved syntax reference"} for r in rows)
+    unresolved = list({(x["file_path"], x["line"], x["target_name"]): x for x in unresolved}.values())
+
+    all_dependents = list(direct.values()) + list(transitive.values())
+    resolutions = {x["resolution"] for x in traversed_edges}
+    if resolutions and all(x.startswith("tree_sitter_") for x in resolutions):
+        confidence = "higher_static_confidence"
+    elif resolutions:
+        confidence = "mixed_static_confidence"
+    else:
+        confidence = "low_or_unknown"
+    impact_count = len(all_dependents)
+    if impact_count >= 10 or len(affected_tests) >= 5:
+        scope = "broad"
+    elif impact_count >= 3 or affected_tests:
+        scope = "moderate"
+    else:
+        scope = "narrow_or_unresolved"
+
+    return {
+        "status": "compared", "impact_status": "analyzed",
+        "base_snapshot": base_id, "head_snapshot": head_id,
+        "change_summary": comparison["counts"],
+        "changed_symbols": changes[:limit],
+        "direct_dependents": sorted(direct.values(), key=lambda x: (x["file_path"], x["line"]))[:limit],
+        "transitive_dependents": sorted(transitive.values(), key=lambda x: (x["depth"], x["file_path"], x["line"]))[:limit],
+        "affected_tests": sorted(affected_tests)[:limit],
+        "unresolved_references_to_changed_names": unresolved[:limit],
+        "impact_scope": scope, "static_resolution_confidence": confidence,
+        "parser_coverage": store.parser_coverage(head_id),
+        "truncated": len(changes) > limit or len(direct) > limit or len(transitive) > limit
+                    or len(affected_tests) > limit or len(unresolved) > limit,
+        "notice": "Static syntax impact only. Dynamic dispatch, reflection, dependency injection, generated code and runtime behavior may be missing. Suggested tests are not executed automatically.",
+    }

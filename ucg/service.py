@@ -7,6 +7,7 @@ from .engine import scan_workspace
 from .context import build_context_pack, StaleSnapshotError
 from .diagnostics import Diagnostics, index_path, support_bundle
 from .scanner import scan_files
+from .treesitter import install_parsers as install_tree_sitter_parsers, parser_status as tree_sitter_status
 
 
 class GuardianService:
@@ -40,7 +41,8 @@ class GuardianService:
                     "cache_hit":result["cache_hit"],"parsed_files":result["parsed_files"],
                     "reused_files":result["reused_files"],"skipped_files":result["skipped_files"],
                     "warnings":len(result["diagnostics"]),"timings_seconds":result["timings_seconds"],
-                    "relationships":"ast_candidate (heuristic; not compiler-verified)"}
+                    "relationships":"Tree-sitter syntactic bindings where available; fallback AST candidates are heuristic.",
+                    "parser_coverage":result.get("coverage",{})}
         except Exception as exc:
             self.metrics.error("scan",exc)
             raise
@@ -55,7 +57,7 @@ class GuardianService:
             else:
                 current=self._check_freshness(store,snapshot)
                 result={"snapshot_id":snapshot,"index_status":current["status"],**current,
-                        "overview":store.overview(snapshot)}
+                        "overview":store.overview(snapshot),"parser_coverage":store.parser_coverage(snapshot)}
         finally: store.close()
         self.metrics.log("index_status",index_status=result["index_status"],success=True,
                          duration_ms=round(1000*(time.perf_counter()-begin),3))
@@ -73,7 +75,8 @@ class GuardianService:
         try:
             snapshot=self._guard_latest(store)
             result={"snapshot_id":snapshot,**store.overview(snapshot),
-                    "relationships":"ast_candidate (heuristic; not compiler-verified)"}
+                    "relationships":"Tree-sitter syntactic bindings where available; fallback AST candidates are heuristic.",
+                    "parser_coverage":store.parser_coverage(snapshot)}
         finally:store.close()
         self.metrics.log("tool_call",tool_name="guardian_overview",success=True,duration_ms=round(1000*(time.perf_counter()-start),3))
         return result
@@ -108,7 +111,8 @@ class GuardianService:
         self.metrics.log("tool_call",tool_name=tool,success=True,
                          duration_ms=round(1000*(time.perf_counter()-start),3))
         return {"snapshot_id":snapshot,"direction":direction,"edges":edges[:200],
-                "relationships":"ast_candidate (heuristic; not compiler-verified)"}
+                "relationships":"Tree-sitter syntactic bindings where available; fallback AST candidates are heuristic.",
+                    "parser_coverage":store.parser_coverage(snapshot)}
 
     def context(self, query: str, max_chars: int = 12000) -> dict:
         started=time.perf_counter(); store=UCGStore(self.db)
@@ -177,6 +181,35 @@ class GuardianService:
             return {"snapshot_id":snapshot,"markdown":content,"characters":len(content),
                     "notice":"Offline preview, not written to the scanned workspace."}
         return self._offline_query("guardian_offline_brief",create)
+
+
+    def parser_status(self) -> dict:
+        result = tree_sitter_status()
+        try:
+            store = UCGStore(self.db)
+            try:
+                snapshot = store.latest_snapshot(str(self.root))
+                result["indexed_snapshot"] = snapshot
+                result["indexed_coverage"] = store.parser_coverage(snapshot) if snapshot else None
+            finally:
+                store.close()
+        except Exception:
+            result["indexed_snapshot"] = None
+            result["indexed_coverage"] = None
+        return result
+
+    def install_parsers(self, languages: list[str]) -> dict:
+        result = install_tree_sitter_parsers(languages)
+        self.metrics.log("tool_call", tool_name="guardian_parser_install", success=True,
+                         duration_ms=0.0)
+        return result
+
+    def change_impact(self, base: str | None = None, head: str | None = None,
+                      depth: int = 3, limit: int = 100) -> dict:
+        from . import offline
+        return self._offline_query(
+            "guardian_change_impact",
+            lambda store,s:offline.change_impact(store,str(self.root),base,head,depth,limit))
 
     def support_log(self) -> dict:
         p=support_bundle(self.root)

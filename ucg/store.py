@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from .models import FileRecord, SymbolRecord, EdgeRecord
+from .models import (FileRecord, SymbolRecord, EdgeRecord, FileAnalysisRecord, ImportRecord, ReferenceRecord, SymbolAnalysisRecord)
 
 SCHEMA = """
 PRAGMA foreign_keys=ON;
@@ -45,6 +45,35 @@ CREATE TABLE IF NOT EXISTS edges(
 );
 CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(snapshot_id,source_id,relation);
 CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(snapshot_id,target_id,relation);
+CREATE TABLE IF NOT EXISTS file_analysis(
+  snapshot_id TEXT NOT NULL, path TEXT NOT NULL, parser_backend TEXT NOT NULL,
+  parse_status TEXT NOT NULL, error_count INTEGER NOT NULL, parser_version TEXT NOT NULL,
+  PRIMARY KEY(snapshot_id,path)
+);
+CREATE INDEX IF NOT EXISTS idx_file_analysis_backend ON file_analysis(snapshot_id,parser_backend);
+CREATE TABLE IF NOT EXISTS imports(
+  snapshot_id TEXT NOT NULL, file_path TEXT NOT NULL, module_specifier TEXT NOT NULL,
+  imported_name TEXT NOT NULL, local_name TEXT NOT NULL, import_kind TEXT NOT NULL,
+  line INTEGER NOT NULL, resolved_path TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY(snapshot_id,file_path,module_specifier,imported_name,local_name,line)
+);
+CREATE INDEX IF NOT EXISTS idx_imports_resolved ON imports(snapshot_id,resolved_path,file_path);
+CREATE TABLE IF NOT EXISTS symbol_references(
+  snapshot_id TEXT NOT NULL, source_id TEXT NOT NULL, target_name TEXT NOT NULL,
+  receiver TEXT NOT NULL, syntax_kind TEXT NOT NULL, evidence_path TEXT NOT NULL,
+  evidence_line INTEGER NOT NULL, start_byte INTEGER NOT NULL, end_byte INTEGER NOT NULL,
+  resolution TEXT NOT NULL, target_id TEXT NOT NULL, confidence REAL NOT NULL,
+  reason TEXT NOT NULL,
+  PRIMARY KEY(snapshot_id,source_id,evidence_path,start_byte,end_byte)
+);
+CREATE INDEX IF NOT EXISTS idx_references_target ON symbol_references(snapshot_id,target_id);
+CREATE INDEX IF NOT EXISTS idx_references_source ON symbol_references(snapshot_id,source_id);
+CREATE TABLE IF NOT EXISTS symbol_analysis(
+  snapshot_id TEXT NOT NULL, symbol_id TEXT NOT NULL, scope_name TEXT NOT NULL,
+  signature_hash TEXT NOT NULL, body_hash TEXT NOT NULL, declaration_hash TEXT NOT NULL,
+  PRIMARY KEY(snapshot_id,symbol_id)
+);
+CREATE INDEX IF NOT EXISTS idx_symbol_analysis_scope ON symbol_analysis(snapshot_id,scope_name);
 CREATE VIRTUAL TABLE IF NOT EXISTS symbol_fts USING fts5(snapshot_id UNINDEXED,symbol_id UNINDEXED,name,qualified_name,signature,file_path);
 """
 
@@ -88,7 +117,11 @@ class UCGStore:
 
     def commit_snapshot(self, snapshot_id: str, root: str, files: list[FileRecord],
                         symbols: list[SymbolRecord], call_sites: list[tuple[str,str,str,int]],
-                        edges: list[EdgeRecord]) -> None:
+                        edges: list[EdgeRecord],
+                        file_analysis: list[FileAnalysisRecord] | None = None,
+                        imports: list[ImportRecord] | None = None,
+                        references: list[ReferenceRecord] | None = None,
+                        symbol_analysis: list[SymbolAnalysisRecord] | None = None) -> None:
         """Commit the entire graph atomically; a failed scan cannot leak partial data."""
         with self.conn:
             self.conn.execute("INSERT INTO snapshots(snapshot_id,root_path) VALUES(?,?)", (snapshot_id, root))
@@ -110,6 +143,82 @@ class UCGStore:
                 "INSERT INTO symbol_fts(snapshot_id,symbol_id,name,qualified_name,signature,file_path) VALUES(?,?,?,?,?,?)",
                 [(snapshot_id,s.symbol_id,s.name,s.qualified_name,s.signature,s.file_path) for s in symbols]
             )
+            self.conn.executemany(
+                "INSERT INTO file_analysis VALUES(?,?,?,?,?,?)",
+                [(snapshot_id,x.file_path,x.parser_backend,x.parse_status,x.error_count,x.parser_version)
+                 for x in (file_analysis or [])]
+            )
+            self.conn.executemany(
+                "INSERT INTO imports VALUES(?,?,?,?,?,?,?,?)",
+                [(snapshot_id,x.file_path,x.module_specifier,x.imported_name,x.local_name,
+                  x.import_kind,x.line,x.resolved_path) for x in (imports or [])]
+            )
+            self.conn.executemany(
+                "INSERT INTO symbol_references VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                [(snapshot_id,x.source_id,x.target_name,x.receiver,x.syntax_kind,x.evidence_path,
+                  x.evidence_line,x.start_byte,x.end_byte,x.resolution,x.target_id,
+                  x.confidence,x.reason) for x in (references or [])]
+            )
+            self.conn.executemany(
+                "INSERT INTO symbol_analysis VALUES(?,?,?,?,?,?)",
+                [(snapshot_id,x.symbol_id,x.scope_name,x.signature_hash,x.body_hash,x.declaration_hash)
+                 for x in (symbol_analysis or [])]
+            )
+
+
+    def get_file_analysis(self, snapshot_id: str, path: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT parser_backend,parse_status,error_count,parser_version FROM file_analysis WHERE snapshot_id=? AND path=?",
+            (snapshot_id,path)).fetchone()
+        return ({"parser_backend":row[0],"parse_status":row[1],"error_count":row[2],"parser_version":row[3]}
+                if row else None)
+
+    def get_file_analysis_for_file(self, snapshot_id: str, path: str) -> FileAnalysisRecord | None:
+        row = self.conn.execute(
+            "SELECT path,parser_backend,parse_status,error_count,parser_version FROM file_analysis WHERE snapshot_id=? AND path=?",
+            (snapshot_id,path)).fetchone()
+        return FileAnalysisRecord(*row) if row else None
+
+    def get_imports_for_file(self, snapshot_id: str, path: str) -> list[ImportRecord]:
+        rows = self.conn.execute(
+            "SELECT file_path,module_specifier,imported_name,local_name,import_kind,line,resolved_path "
+            "FROM imports WHERE snapshot_id=? AND file_path=?", (snapshot_id,path)).fetchall()
+        return [ImportRecord(*row) for row in rows]
+
+    def get_references_for_file(self, snapshot_id: str, path: str) -> list[ReferenceRecord]:
+        rows = self.conn.execute(
+            "SELECT source_id,target_name,receiver,syntax_kind,evidence_path,evidence_line,"
+            "start_byte,end_byte,resolution,target_id,confidence,reason "
+            "FROM symbol_references WHERE snapshot_id=? AND evidence_path=?", (snapshot_id,path)).fetchall()
+        return [ReferenceRecord(*row) for row in rows]
+
+    def get_symbol_analysis_for_file(self, snapshot_id: str, path: str) -> list[SymbolAnalysisRecord]:
+        rows = self.conn.execute(
+            "SELECT a.symbol_id,a.scope_name,a.signature_hash,a.body_hash,a.declaration_hash "
+            "FROM symbol_analysis a JOIN symbols s ON s.snapshot_id=a.snapshot_id AND s.symbol_id=a.symbol_id "
+            "WHERE a.snapshot_id=? AND s.file_path=?", (snapshot_id,path)).fetchall()
+        return [SymbolAnalysisRecord(*row) for row in rows]
+
+    def parser_coverage(self, snapshot_id: str) -> dict:
+        backends = dict(self.conn.execute(
+            "SELECT parser_backend,COUNT(*) FROM file_analysis WHERE snapshot_id=? GROUP BY parser_backend",
+            (snapshot_id,)).fetchall())
+        statuses = dict(self.conn.execute(
+            "SELECT parse_status,COUNT(*) FROM file_analysis WHERE snapshot_id=? GROUP BY parse_status",
+            (snapshot_id,)).fetchall())
+        resolved = self.conn.execute(
+            "SELECT resolution,COUNT(*) FROM symbol_references WHERE snapshot_id=? AND target_id!='' "
+            "GROUP BY resolution", (snapshot_id,)).fetchall()
+        unresolved = self.conn.execute(
+            "SELECT COUNT(*) FROM symbol_references WHERE snapshot_id=? AND target_id=''",
+            (snapshot_id,)).fetchone()[0]
+        return {"files_by_backend":backends,"parse_status":statuses,
+                "resolved_references":dict(resolved),"unresolved_references":unresolved,
+                "tree_sitter_files":backends.get("tree_sitter",0)}
+
+    def list_file_paths(self, snapshot_id: str) -> set[str]:
+        return {row[0] for row in self.conn.execute(
+            "SELECT path FROM files WHERE snapshot_id=?", (snapshot_id,)).fetchall()}
 
     # Legacy helper methods retained for existing benchmark/tests.
     def create_snapshot(self, snapshot_id: str, root: str):
